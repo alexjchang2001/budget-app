@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# System
+.DS_Store
+
+# Python (bpsai-pair tooling)
+.venv/
+__pycache__/
+*.pyc
+
+# PairCoder — ephemeral/session data
+.paircoder/.cli_version
+.paircoder/history/
+.paircoder/cache/
+.paircoder/telemetry/telemetry.jsonl
+.paircoder/telemetry/audit.jsonl
+.paircoder/telemetry/session_snapshot.json
+.paircoder/feedback/calibration.json
+
+# Misc
+agent_pack.tgz
+*.bak
