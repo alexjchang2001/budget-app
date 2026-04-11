@@ -29,7 +29,6 @@ export function createServerSupabaseClient() {
  * Typed as any to avoid fighting Supabase's complex generic machinery — proper
  * generated types (supabase gen types) will replace this in a future sprint.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createAdminClient(): ReturnType<typeof createClient<any>> {
   return createClient<any>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
