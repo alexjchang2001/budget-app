@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { SignJWT, jwtVerify } from "jose";
 import {
   verifyRegistrationResponse,
-  type RegistrationResponseJSON,
 } from "@simplewebauthn/server";
 
 export const RP_NAME = "Budget App";
@@ -62,6 +61,10 @@ export function clearChallengeCookie(res: NextResponse): void {
   res.cookies.delete(CHALLENGE_COOKIE);
 }
 
+// Extract the response type from verifyRegistrationResponse rather than
+// importing RegistrationResponseJSON which is not re-exported in v9.
+type RegistrationResponse = Parameters<typeof verifyRegistrationResponse>[0]["response"];
+
 /**
  * Verify a WebAuthn registration response and return normalized credential fields.
  * Returns null if the credential fails verification (caller should return 400).
@@ -72,7 +75,7 @@ export async function verifyPasskeyRegistration(
   challenge: string
 ): Promise<{ credentialId: string; publicKey: string; transports: string[]; counter: number } | null> {
   const verification = await verifyRegistrationResponse({
-    response: body as RegistrationResponseJSON,
+    response: body as RegistrationResponse,
     expectedChallenge: challenge,
     expectedOrigin: getOrigin(),
     expectedRPID: getRpId(),
@@ -81,11 +84,14 @@ export async function verifyPasskeyRegistration(
 
   if (!verification.verified || !verification.registrationInfo) return null;
 
-  const { credential } = verification.registrationInfo;
+  const { credentialID, credentialPublicKey, counter } = verification.registrationInfo;
+  // transports is present at runtime in v9 but not reflected in older type definitions
+  const transports: string[] = (verification.registrationInfo as Record<string, unknown>).transports as string[] ?? [];
+
   return {
-    credentialId: Buffer.from(credential.id).toString("base64url"),
-    publicKey: Buffer.from(credential.publicKey).toString("base64url"),
-    transports: credential.transports ?? [],
-    counter: credential.counter,
+    credentialId: Buffer.from(credentialID).toString("base64url"),
+    publicKey: Buffer.from(credentialPublicKey).toString("base64url"),
+    transports,
+    counter,
   };
 }

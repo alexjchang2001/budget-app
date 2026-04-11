@@ -15,7 +15,7 @@ export async function POST(): Promise<NextResponse> {
   const options = await generateRegistrationOptions({
     rpName: RP_NAME,
     rpID,
-    userID: Buffer.from(userId),
+    userID: userId,
     userName: "user",
     attestationType: "none",
     authenticatorSelection: {

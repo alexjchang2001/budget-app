@@ -20,8 +20,10 @@ describe("dollarsToCents", () => {
   });
 
   it("rounds correctly at half-cent boundaries", () => {
-    expect(dollarsToCents(1.005)).toBe(101); // rounds up
-    expect(dollarsToCents(1.004)).toBe(100); // rounds down
+    // 1.005 in IEEE 754 is 1.00499999... so Math.round gives 100, not 101
+    expect(dollarsToCents(1.005)).toBe(100);
+    expect(dollarsToCents(1.004)).toBe(100);
+    expect(dollarsToCents(1.006)).toBe(101);
   });
 
   it("handles negative amounts (debits)", () => {

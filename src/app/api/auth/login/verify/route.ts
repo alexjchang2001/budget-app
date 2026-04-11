@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAuthenticationResponse } from "@simplewebauthn/server";
+import {
+  verifyAuthenticationResponse,
+  type AuthenticatorTransportFuture,
+} from "@simplewebauthn/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { getChallengeCookieData, clearChallengeCookie, getRpId, getOrigin } from "@/lib/webauthn";
 import { signJwt } from "@/lib/jwt";
@@ -28,7 +31,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Unknown credential" }, { status: 401 });
     }
 
-    const publicKeyBytes = Buffer.from(user.passkey_public_key!, "base64url");
+    const publicKeyBytes = Buffer.from(user.passkey_public_key, "base64url");
 
     const verification = await verifyAuthenticationResponse({
       response: body,
@@ -36,11 +39,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       expectedOrigin: getOrigin(),
       expectedRPID: getRpId(),
       requireUserVerification: true,
-      credential: {
-        id: Buffer.from(credentialId, "base64url"),
-        publicKey: publicKeyBytes,
+      authenticator: {
+        credentialID: Buffer.from(credentialId, "base64url"),
+        credentialPublicKey: publicKeyBytes,
         counter: user.passkey_counter,
-        transports: user.passkey_transports as [],
+        transports: user.passkey_transports as AuthenticatorTransportFuture[],
       },
     });
 
@@ -48,13 +51,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Assertion failed" }, { status: 401 });
     }
 
-    const [, token] = await Promise.all([
+    const [updateResult, token] = await Promise.all([
       supabase
         .from("user")
         .update({ passkey_counter: verification.authenticationInfo.newCounter })
         .eq("id", user.id),
       signJwt(user.id),
     ]);
+
+    if (updateResult.error) {
+      console.error("Counter update error:", updateResult.error);
+    }
 
     const response = NextResponse.json({ userId: user.id });
     setAuthCookie(response, token);

@@ -39,7 +39,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const options = await generateRegistrationOptions({
       rpName: RP_NAME,
       rpID: getRpId(),
-      userID: Buffer.from(user!.id),
+      userID: user!.id,
       userName: "user",
       attestationType: "none",
       authenticatorSelection: {
