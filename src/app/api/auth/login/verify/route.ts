@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  verifyAuthenticationResponse,
-  type AuthenticatorTransportFuture,
-} from "@simplewebauthn/server";
+import { verifyAuthenticationResponse } from "@simplewebauthn/server";
+
+// AuthenticatorTransportFuture is not re-exported from @simplewebauthn/server v9
+type AuthenticatorTransportFuture = "usb" | "ble" | "nfc" | "internal" | "hybrid" | "smart-card";
 import { createAdminClient } from "@/lib/supabase-server";
 import { getChallengeCookieData, clearChallengeCookie, getRpId, getOrigin } from "@/lib/webauthn";
 import { signJwt } from "@/lib/jwt";
