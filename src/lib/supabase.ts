@@ -20,6 +20,22 @@ export type UserRow = {
   created_at: string;
 };
 
+export type TransactionRow = {
+  id: string;
+  user_id: string;
+  teller_transaction_id: string;
+  amount: number;
+  description: string;
+  merchant_name: string;
+  posted_at: string;
+  week_id: string | null;
+  bucket_id: string | null;
+  classification_confidence: number | null;
+  classification_override: boolean;
+  is_direct_deposit: boolean;
+  bill_id: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
