@@ -9,7 +9,14 @@ export type UserRow = {
   recovery_email: string | null;
   recovery_code_hash: string;
   recovery_code_salt: string;
+  baseline_weekly_income: number;
   setup_complete: boolean;
+  teller_enrollment_id: string | null;
+  teller_access_token: string | null;
+  teller_access_token_iv: string | null;
+  teller_access_token_tag: string | null;
+  teller_sync_failed: boolean;
+  teller_degraded_since: string | null;
   created_at: string;
 };
 

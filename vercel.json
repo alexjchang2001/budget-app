@@ -1,4 +1,8 @@
 {
+  "crons": [
+    { "path": "/api/cron/teller-poll", "schedule": "*/30 * * * *" },
+    { "path": "/api/cron/teller-balance", "schedule": "0 */4 * * *" }
+  ],
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "required",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "required",
@@ -6,6 +10,9 @@
     "TELLER_APP_ID": "required",
     "TELLER_SIGNING_SECRET": "required",
     "ANTHROPIC_API_KEY": "required",
-    "JWT_SECRET": "required"
+    "JWT_SECRET": "required",
+    "CRON_SECRET": "required",
+    "WEBAUTHN_RP_ID": "required",
+    "WEBAUTHN_ORIGIN": "required"
   }
 }
