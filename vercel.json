@@ -1,0 +1,11 @@
+{
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "required",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "required",
+    "SUPABASE_SERVICE_ROLE_KEY": "required",
+    "TELLER_APP_ID": "required",
+    "TELLER_SIGNING_SECRET": "required",
+    "ANTHROPIC_API_KEY": "required",
+    "JWT_SECRET": "required"
+  }
+}
