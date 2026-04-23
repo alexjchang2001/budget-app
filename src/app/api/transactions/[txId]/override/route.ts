@@ -4,6 +4,49 @@ import { createAdminClient } from "@/lib/supabase-server";
 
 type Params = { params: { txId: string } };
 
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function parseBucketId(
+  request: NextRequest
+): Promise<string | Response> {
+  try {
+    const body = (await request.json()) as { bucket_id: string };
+    if (!body.bucket_id) throw new Error("missing bucket_id");
+    return body.bucket_id;
+  } catch {
+    return jsonResponse(400, { error: "bucket_id required" });
+  }
+}
+
+async function verifyOwnership(
+  userId: string,
+  txId: string,
+  bucketId: string
+): Promise<Response | null> {
+  const supabase = createAdminClient();
+  const { data: tx } = await supabase
+    .from("transaction")
+    .select("id, user_id")
+    .eq("id", txId)
+    .eq("user_id", userId)
+    .single();
+  if (!tx) return jsonResponse(404, { error: "Transaction not found" });
+
+  const { data: bucket } = await supabase
+    .from("bucket")
+    .select("id")
+    .eq("id", bucketId)
+    .eq("user_id", userId)
+    .single();
+  if (!bucket) return jsonResponse(404, { error: "Bucket not found" });
+  return null;
+}
+
 export async function POST(
   request: NextRequest,
   { params }: Params
@@ -12,74 +55,21 @@ export async function POST(
   try {
     ({ userId } = await requireAuth());
   } catch {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse(401, { error: "Unauthorized" });
   }
 
-  let bucketId: string;
-  try {
-    const body = (await request.json()) as { bucket_id: string };
-    bucketId = body.bucket_id;
-    if (!bucketId) throw new Error("missing bucket_id");
-  } catch {
-    return new Response(JSON.stringify({ error: "bucket_id required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  const bucketIdOrRes = await parseBucketId(request);
+  if (bucketIdOrRes instanceof Response) return bucketIdOrRes;
+
+  const ownership = await verifyOwnership(userId, params.txId, bucketIdOrRes);
+  if (ownership) return ownership;
 
   const supabase = createAdminClient();
-  const { txId } = params;
-
-  // Verify the transaction belongs to this user
-  const { data: tx } = await supabase
-    .from("transaction")
-    .select("id, user_id")
-    .eq("id", txId)
-    .eq("user_id", userId)
-    .single();
-
-  if (!tx) {
-    return new Response(JSON.stringify({ error: "Transaction not found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Verify bucket belongs to this user
-  const { data: bucket } = await supabase
-    .from("bucket")
-    .select("id")
-    .eq("id", bucketId)
-    .eq("user_id", userId)
-    .single();
-
-  if (!bucket) {
-    return new Response(JSON.stringify({ error: "Bucket not found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
   const { error } = await supabase
     .from("transaction")
-    .update({
-      bucket_id: bucketId,
-      classification_override: true,
-    })
-    .eq("id", txId);
+    .update({ bucket_id: bucketIdOrRes, classification_override: true })
+    .eq("id", params.txId);
 
-  if (error) {
-    return new Response(JSON.stringify({ error: "Update failed" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  return new Response(JSON.stringify({ ok: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  if (error) return jsonResponse(500, { error: "Update failed" });
+  return jsonResponse(200, { ok: true });
 }

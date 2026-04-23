@@ -18,7 +18,10 @@ async function sumNonBillAllocations(
     .eq("week_id", weekId)
     .neq("bucket.type", "bills");
   if (error) throw error;
-  return (data ?? []).reduce((sum, row) => sum + (row[column] as number), 0);
+  return (data ?? []).reduce((sum, row) => {
+    const value = (row as Record<string, unknown>)[column] as number;
+    return sum + value;
+  }, 0);
 }
 
 // Current daily limit = remaining balance across non-bill buckets / days left.

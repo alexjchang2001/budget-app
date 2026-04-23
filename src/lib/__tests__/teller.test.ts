@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { computeBackoffDelay, addJitter } from "@/lib/teller/errors";
 import { encryptToken, decryptToken } from "@/lib/teller/client";
-import { verifyTellerHmac } from "@/app/api/webhooks/teller/route";
+import { verifyTellerHmac } from "@/lib/teller/hmac";
 import { createHmac } from "crypto";
 
 beforeAll(() => {
@@ -69,6 +69,10 @@ describe("encryptToken / decryptToken round-trip", () => {
 describe("verifyTellerHmac", () => {
   const secret = "test-signing-secret";
 
+  function currentTimestamp(): string {
+    return Math.floor(Date.now() / 1000).toString();
+  }
+
   function makeSignature(body: string, timestamp: string): string {
     const payload = `${timestamp}.${body}`;
     const hmac = createHmac("sha256", secret).update(payload).digest("hex");
@@ -77,19 +81,19 @@ describe("verifyTellerHmac", () => {
 
   it("accepts a valid signature", () => {
     const body = JSON.stringify({ type: "transaction.created" });
-    const sig = makeSignature(body, "1234567890");
+    const sig = makeSignature(body, currentTimestamp());
     expect(verifyTellerHmac(body, sig, secret)).toBe(true);
   });
 
   it("rejects a tampered body", () => {
     const body = JSON.stringify({ type: "transaction.created" });
-    const sig = makeSignature(body, "1234567890");
+    const sig = makeSignature(body, currentTimestamp());
     expect(verifyTellerHmac('{"type":"other"}', sig, secret)).toBe(false);
   });
 
   it("rejects a wrong secret", () => {
     const body = JSON.stringify({ type: "transaction.created" });
-    const sig = makeSignature(body, "1234567890");
+    const sig = makeSignature(body, currentTimestamp());
     expect(verifyTellerHmac(body, sig, "wrong-secret")).toBe(false);
   });
 

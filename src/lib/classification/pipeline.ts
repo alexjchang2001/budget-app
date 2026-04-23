@@ -68,7 +68,7 @@ async function callClaude(
         // Cache the stable system prompt (bucket defs + 10 examples)
         cache_control: { type: "ephemeral" },
       },
-    ] as Parameters<typeof anthropic.messages.create>[0]["system"],
+    ] as unknown as Parameters<typeof anthropic.messages.create>[0]["system"],
     messages: [{ role: "user", content: buildUserContent(tx) }],
   });
 

@@ -47,11 +47,14 @@ export async function assembleExamples(
     .order("posted_at", { ascending: false })
     .limit(10);
 
-  const examples: FormattedExample[] = (userTxs ?? []).map((tx) => ({
-    input: `${tx.merchant_name || tx.description} | $${centsToDollars(tx.amount).toFixed(2)}`,
-    bucket_type: (tx.bucket as { type: string }).type,
-    rationale: `User confirmed as ${(tx.bucket as { name: string }).name}`,
-  }));
+  const examples: FormattedExample[] = (userTxs ?? []).map((tx) => {
+    const bucket = tx.bucket as unknown as { type: string; name: string };
+    return {
+      input: `${tx.merchant_name || tx.description} | $${centsToDollars(tx.amount).toFixed(2)}`,
+      bucket_type: bucket.type,
+      rationale: `User confirmed as ${bucket.name}`,
+    };
+  });
 
   // Pad with seed examples if needed
   if (examples.length < 10) {

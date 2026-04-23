@@ -9,105 +9,118 @@ import {
   promoteProvisionalWeek,
 } from "@/lib/engine/week";
 
-export async function POST(request: NextRequest): Promise<Response> {
-  let userId: string;
-  try {
-    ({ userId } = await requireAuth());
-  } catch {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+type RequestBody = {
+  weekId: string | undefined;
+  incomeActual: number | undefined;
+};
 
-  let weekId: string | undefined;
-  let incomeActual: number | undefined;
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
 
+async function parseRequestBody(
+  request: NextRequest
+): Promise<RequestBody | Response> {
   try {
     const body = (await request.json()) as {
       weekId?: string;
       incomeActual?: number;
     };
-    weekId = body.weekId;
-    incomeActual = body.incomeActual;
+    return { weekId: body.weekId, incomeActual: body.incomeActual };
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
+    return jsonResponse(400, { error: "Invalid JSON" });
+  }
+}
+
+async function verifyWeekOwnership(
+  weekId: string,
+  userId: string
+): Promise<Response | null> {
+  const supabase = createAdminClient();
+  const { data: owned } = await supabase
+    .from("week")
+    .select("id")
+    .eq("id", weekId)
+    .eq("user_id", userId)
+    .single();
+  if (!owned) return jsonResponse(404, { error: "Week not found" });
+  return null;
+}
+
+async function resolveWeekId(userId: string): Promise<string> {
+  const supabase = createAdminClient();
+  const friday = getMostRecentFriday(new Date());
+  const fridayStr = friday.toISOString().split("T")[0];
+
+  const { data: existing } = await supabase
+    .from("week")
+    .select("id, status")
+    .eq("user_id", userId)
+    .eq("week_start", fridayStr)
+    .single();
+
+  if (existing) return existing.id;
+
+  const week = await createProvisionalWeek(userId);
+  await reassignFridayTransactions(week.id, friday);
+  return week.id;
+}
+
+async function resolveIncome(
+  userId: string,
+  incomeActual: number | undefined
+): Promise<number> {
+  if (incomeActual !== undefined) return incomeActual;
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("user")
+    .select("baseline_weekly_income")
+    .eq("id", userId)
+    .single();
+  return data?.baseline_weekly_income ?? 0;
+}
+
+async function executeAllocation(
+  userId: string,
+  body: RequestBody
+): Promise<Response> {
+  if (body.weekId) {
+    const ownership = await verifyWeekOwnership(body.weekId, userId);
+    if (ownership) return ownership;
+  }
+  const weekId = body.weekId ?? (await resolveWeekId(userId));
+
+  if (body.incomeActual !== undefined) {
+    const today = new Date().toISOString().split("T")[0];
+    await promoteProvisionalWeek(weekId, {
+      incomeActual: body.incomeActual,
+      payday: today,
     });
   }
 
+  const income = await resolveIncome(userId, body.incomeActual);
+  const result = await runAllocationEngine(weekId, income, userId);
+  return jsonResponse(200, { ok: true, weekId, result });
+}
+
+export async function POST(request: NextRequest): Promise<Response> {
+  let userId: string;
   try {
-    const supabase = createAdminClient();
+    ({ userId } = await requireAuth());
+  } catch {
+    return jsonResponse(401, { error: "Unauthorized" });
+  }
 
-    // Verify weekId belongs to caller when explicitly provided
-    if (weekId) {
-      const { data: owned } = await supabase
-        .from("week")
-        .select("id")
-        .eq("id", weekId)
-        .eq("user_id", userId)
-        .single();
-      if (!owned) {
-        return new Response(JSON.stringify({ error: "Week not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-    }
+  const parsed = await parseRequestBody(request);
+  if (parsed instanceof Response) return parsed;
 
-    // If no weekId provided, create or find the current provisional week
-    if (!weekId) {
-      const friday = getMostRecentFriday(new Date());
-      const fridayStr = friday.toISOString().split("T")[0];
-
-      const { data: existing } = await supabase
-        .from("week")
-        .select("id, status")
-        .eq("user_id", userId)
-        .eq("week_start", fridayStr)
-        .single();
-
-      if (existing) {
-        weekId = existing.id;
-      } else {
-        const week = await createProvisionalWeek(userId);
-        await reassignFridayTransactions(week.id, friday);
-        weekId = week.id;
-      }
-    }
-
-    // Promote to active if income provided
-    if (incomeActual !== undefined) {
-      const today = new Date().toISOString().split("T")[0];
-      await promoteProvisionalWeek(weekId, {
-        incomeActual,
-        payday: today,
-      });
-    }
-
-    const income =
-      incomeActual ??
-      (await (async () => {
-        const { data } = await supabase
-          .from("user")
-          .select("baseline_weekly_income")
-          .eq("id", userId)
-          .single();
-        return data?.baseline_weekly_income ?? 0;
-      })());
-
-    const result = await runAllocationEngine(weekId, income, userId);
-
-    return new Response(JSON.stringify({ ok: true, weekId, result }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+  try {
+    return await executeAllocation(userId, parsed);
   } catch (err) {
     console.error("run-allocation error:", err);
-    return new Response(JSON.stringify({ error: "Internal error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse(500, { error: "Internal error" });
   }
 }

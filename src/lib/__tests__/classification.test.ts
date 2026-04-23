@@ -4,76 +4,83 @@ import { buildSystemPrompt, buildUserContent } from "@/lib/classification/prompt
 import type { BucketInfo } from "@/lib/classification/prompt";
 
 // ---------------------------------------------------------------------------
-// isDirectDepositBySignals
+// isDirectDepositBySignals — shared helper
 // ---------------------------------------------------------------------------
-describe("isDirectDepositBySignals", () => {
-  const baselineCents = 80000; // $800/week
+const BASELINE_CENTS = 80000; // $800/week
 
-  function makeTx(overrides: {
-    amount?: number;
-    description?: string;
-    merchant_name?: string;
-    posted_at?: string;
-  }) {
-    return {
-      amount: overrides.amount ?? 90000,
-      description: overrides.description ?? "Direct Deposit",
-      merchant_name: overrides.merchant_name ?? "",
-      posted_at: overrides.posted_at ?? "2026-04-17T09:00:00.000Z", // Friday
-    };
-  }
+function makeTx(overrides: {
+  amount?: number;
+  description?: string;
+  merchant_name?: string;
+  posted_at?: string;
+}) {
+  return {
+    amount: overrides.amount ?? 90000,
+    description: overrides.description ?? "Direct Deposit",
+    merchant_name: overrides.merchant_name ?? "",
+    posted_at: overrides.posted_at ?? "2026-04-17T09:00:00.000Z", // Friday
+  };
+}
 
+// ---------------------------------------------------------------------------
+// isDirectDepositBySignals — day-of-week detection
+// ---------------------------------------------------------------------------
+describe("isDirectDepositBySignals: day-of-week", () => {
   it("detects a standard direct deposit on Friday", () => {
-    expect(isDirectDepositBySignals(makeTx({}), baselineCents)).toBe(true);
+    expect(isDirectDepositBySignals(makeTx({}), BASELINE_CENTS)).toBe(true);
   });
 
   it("detects on Saturday (fallback day)", () => {
-    const tx = makeTx({ posted_at: "2026-04-18T09:00:00.000Z" }); // Saturday
-    expect(isDirectDepositBySignals(tx, baselineCents)).toBe(true);
+    const tx = makeTx({ posted_at: "2026-04-18T09:00:00.000Z" });
+    expect(isDirectDepositBySignals(tx, BASELINE_CENTS)).toBe(true);
   });
 
   it("detects on Sunday (fallback day)", () => {
-    const tx = makeTx({ posted_at: "2026-04-19T09:00:00.000Z" }); // Sunday
-    expect(isDirectDepositBySignals(tx, baselineCents)).toBe(true);
+    const tx = makeTx({ posted_at: "2026-04-19T09:00:00.000Z" });
+    expect(isDirectDepositBySignals(tx, BASELINE_CENTS)).toBe(true);
   });
 
   it("rejects on Monday (not a deposit day)", () => {
-    const tx = makeTx({ posted_at: "2026-04-20T09:00:00.000Z" }); // Monday
-    expect(isDirectDepositBySignals(tx, baselineCents)).toBe(false);
+    const tx = makeTx({ posted_at: "2026-04-20T09:00:00.000Z" });
+    expect(isDirectDepositBySignals(tx, BASELINE_CENTS)).toBe(false);
   });
+});
 
+// ---------------------------------------------------------------------------
+// isDirectDepositBySignals — amount & keyword matching
+// ---------------------------------------------------------------------------
+describe("isDirectDepositBySignals: amount & keywords", () => {
   it("rejects negative amount", () => {
-    expect(isDirectDepositBySignals(makeTx({ amount: -90000 }), baselineCents)).toBe(false);
+    expect(isDirectDepositBySignals(makeTx({ amount: -90000 }), BASELINE_CENTS)).toBe(false);
   });
 
   it("rejects when no deposit keyword matches", () => {
     const tx = makeTx({ description: "Amazon Purchase", merchant_name: "Amazon" });
-    expect(isDirectDepositBySignals(tx, baselineCents)).toBe(false);
+    expect(isDirectDepositBySignals(tx, BASELINE_CENTS)).toBe(false);
   });
 
   it("rejects when amount < 60% of baseline", () => {
-    const tx = makeTx({ amount: 40000 }); // $400 < 60% of $800
-    expect(isDirectDepositBySignals(tx, baselineCents)).toBe(false);
+    const tx = makeTx({ amount: 40000 });
+    expect(isDirectDepositBySignals(tx, BASELINE_CENTS)).toBe(false);
   });
 
   it("accepts amount exactly at 60% of baseline", () => {
-    const tx = makeTx({ amount: 48000 }); // $480 = 60% of $800
-    expect(isDirectDepositBySignals(tx, baselineCents)).toBe(true);
+    const tx = makeTx({ amount: 48000 });
+    expect(isDirectDepositBySignals(tx, BASELINE_CENTS)).toBe(true);
   });
 
   it("detects ACH credit keyword", () => {
     const tx = makeTx({ description: "ACH Credit Payroll", merchant_name: "" });
-    expect(isDirectDepositBySignals(tx, baselineCents)).toBe(true);
+    expect(isDirectDepositBySignals(tx, BASELINE_CENTS)).toBe(true);
   });
 
   it("detects payroll keyword in merchant name", () => {
     const tx = makeTx({ description: "", merchant_name: "Employer Payroll" });
-    expect(isDirectDepositBySignals(tx, baselineCents)).toBe(true);
+    expect(isDirectDepositBySignals(tx, BASELINE_CENTS)).toBe(true);
   });
 
   it("skips baseline check when baseline is 0", () => {
-    // If baseline not set yet, skip the amount threshold check
-    const tx = makeTx({ amount: 5000 }); // tiny amount, but no baseline to check against
+    const tx = makeTx({ amount: 5000 });
     expect(isDirectDepositBySignals(tx, 0)).toBe(true);
   });
 });
