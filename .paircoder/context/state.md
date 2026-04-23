@@ -38,11 +38,11 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 
 | ID | Title | Priority | Status |
 |----|-------|----------|--------|
-| T3.1 | Screen 0: Setup Flow (5 Steps) | P0 | pending |
+| T3.1 | Screen 0: Setup Flow (5 Steps) | P0 | done ✓ |
 | T3.2 | Screen 1: Home | P0 | pending |
 | T3.3 | Screen 2: Budget Buckets | P0 | pending |
 | T3.4 | Screen 3: Projection and History | P1 | pending |
-| T3.5 | Claude Vision Schedule Parsing Route | P1 | pending |
+| T3.5 | Claude Vision Schedule Parsing Route | P1 | done ✓ |
 
 ### Sprint 4 — Polish
 
@@ -54,6 +54,10 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 | T4.4 | End-to-End Setup and First-Week Flow Validation | P1 | pending |
 
 ## What Was Just Done
+
+- **T3.5 done**: schedule-parser.ts (parseScheduleImage — Claude vision, SYSTEM_PROMPT exact spec, stripFences, validate); POST /api/schedule/parse (multipart upload → Supabase Storage `schedule-screenshots` → parseScheduleImage → insert schedule_parse row); POST /api/schedule/confirm (per_shift_min < per_shift_max validation → update schedule_parse.confirmed_by_user + week.income_projected_low/high); migration 009 (schedule-screenshots storage bucket); arch check clean.
+
+- **T3.1 done** (auto-updated by hook)
 
 - **T2.5 done** (auto-updated by hook)
 
@@ -105,11 +109,12 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 - Wrote full task content (objective, implementation plan, acceptance criteria, verification) for all 18 tasks
 - Plan file at: `.claude/plans/bubbly-beaming-hopcroft.md`
 - Sprint 3 plan approved; feat/sprint-3-frontend branch created
+- T3.1: Setup flow complete — CI green, arch clean
 
 
 ## What's Next
 
-1. T3.5: Vision backend, then T3.1: Setup Flow
+1. T3.2: Home screen (GET /api/home, DailyLimit, PaydayCountdown, DeficitModal, DepositBanners, SummaryPills)
 
 
 ## Blockers
