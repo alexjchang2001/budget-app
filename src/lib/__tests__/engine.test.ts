@@ -104,7 +104,7 @@ describe("distributeByPct", () => {
     ];
     const { residue } = distributeByPct(33300, three);
     expect(residue).toBeGreaterThanOrEqual(0);
-    expect(residue).toBeLessThanOrEqual(3); // at most 3 cents off with 3 buckets
+    expect(residue).toBeLessThanOrEqual(6); // base 3.33¢ unallocated + 2.67¢ floor truncation
   });
 });
 
@@ -170,9 +170,9 @@ describe("checkDeficitTrigger", () => {
   });
 
   it("fires Condition B: after floors, remaining < food_min", () => {
-    // income=$1000 ($100000), bills=$900 → distributable=$100
-    // after floors: 100 - (1000*0.05) - (1000*0.03) = 100 - 5000 - 3000 = -7900 < 5000
-    const result = checkDeficitTrigger(100000, 90000, FOOD_MIN);
+    // income=$1000 ($100000), distributable=$100 ($10000¢) — passes Condition A (10% > 8%)
+    // after floors: 10000 - 5000 - 3000 = 2000 < 5000 → Condition B
+    const result = checkDeficitTrigger(100000, 10000, FOOD_MIN);
     expect(result.deficit).toBe(true);
     expect(result.condition).toBe("B");
   });
