@@ -6,34 +6,7 @@ import { startRegistration } from "@simplewebauthn/browser";
 import { performLogin } from "@/lib/auth-client";
 
 type Mode = "login" | "register";
-type Step = "form" | "recovery-code";
 type Status = "idle" | "loading" | "error";
-
-function RecoveryCodeStep({ code, saved, onToggle, onContinue }: {
-  code: string; saved: boolean; onToggle: (v: boolean) => void; onContinue: () => void;
-}) {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm">
-        <h1 className="mb-2 text-2xl font-bold">Save your recovery code</h1>
-        <p className="mb-4 text-sm text-gray-500">
-          Write this down. Store it somewhere safe. You will not see it again.
-        </p>
-        <div className="mb-6 rounded-xl bg-gray-100 p-4 text-center font-mono text-xl tracking-widest">
-          {code}
-        </div>
-        <label className="mb-4 flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={saved} onChange={(e) => onToggle(e.target.checked)} />
-          I&apos;ve saved my recovery code
-        </label>
-        <button onClick={onContinue} disabled={!saved}
-          className="w-full rounded-xl bg-black py-4 text-base font-semibold text-white disabled:opacity-40">
-          Continue to setup
-        </button>
-      </div>
-    </main>
-  );
-}
 
 function LoginFormStep({ mode, status, errorMsg, recoveryEmail, onEmailChange, onSubmit, onToggleMode }: {
   mode: Mode; status: Status; errorMsg: string; recoveryEmail: string;
@@ -72,12 +45,9 @@ function LoginFormStep({ mode, status, errorMsg, recoveryEmail, onEmailChange, o
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
-  const [step, setStep] = useState<Step>("form");
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [recoveryEmail, setRecoveryEmail] = useState("");
-  const [shownCode, setShownCode] = useState("");
-  const [codeSaved, setCodeSaved] = useState(false);
 
   async function handleLogin() {
     setStatus("loading"); setErrorMsg("");
@@ -97,15 +67,13 @@ export default function LoginPage() {
       });
       if (!res.ok) throw new Error("Registration failed");
       const { recoveryCode } = await res.json();
-      setShownCode(recoveryCode); setStep("recovery-code"); setStatus("idle");
+      sessionStorage.setItem("pendingRecoveryCode", recoveryCode);
+      router.push("/setup");
     } catch (err) {
       setStatus("error"); setErrorMsg(err instanceof Error ? err.message : "Registration failed");
     }
   }
 
-  if (step === "recovery-code") {
-    return <RecoveryCodeStep code={shownCode} saved={codeSaved} onToggle={setCodeSaved} onContinue={() => router.push("/setup")} />;
-  }
   return (
     <LoginFormStep mode={mode} status={status} errorMsg={errorMsg} recoveryEmail={recoveryEmail}
       onEmailChange={setRecoveryEmail} onSubmit={mode === "login" ? handleLogin : handleRegister}
