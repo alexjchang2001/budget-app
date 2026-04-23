@@ -104,17 +104,13 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 - Created plan `plan-2026-04-budget-app-mvp` with 18 tasks across 4 sprints
 - Wrote full task content (objective, implementation plan, acceptance criteria, verification) for all 18 tasks
 - Plan file at: `.claude/plans/bubbly-beaming-hopcroft.md`
+- Sprint 3 plan approved; feat/sprint-3-frontend branch created
+
 
 ## What's Next
 
-**Sprint 2 complete.** Next: **T3.1** (Screen 0: Setup Flow — 5 Steps) — first Sprint 3 task
+1. T3.5: Vision backend, then T3.1: Setup Flow
 
-```bash
-bpsai-pair task update T1.2 --status in_progress
-```
-
-Dependency order for Sprint 1:
-1. ~~T1.1~~ → T1.2 → T1.3 → T1.4
 
 ## Blockers
 
