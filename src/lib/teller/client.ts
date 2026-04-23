@@ -32,7 +32,11 @@ export type TellerBalance = {
 };
 
 function getEncryptionKey(): Buffer {
-  return createHash("sha256").update(process.env.JWT_SECRET!).digest();
+  // TELLER_ENCRYPTION_KEY is the dedicated secret for token encryption.
+  // Falls back to JWT_SECRET only for tokens encrypted before TELLER_ENCRYPTION_KEY was set.
+  const secret = process.env.TELLER_ENCRYPTION_KEY ?? process.env.JWT_SECRET;
+  if (!secret) throw new Error("TELLER_ENCRYPTION_KEY not set");
+  return createHash("sha256").update(secret).digest();
 }
 
 export function encryptToken(plaintext: string): {

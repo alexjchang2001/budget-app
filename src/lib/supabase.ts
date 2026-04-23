@@ -32,6 +32,7 @@ export type TransactionRow = {
   bucket_id: string | null;
   classification_confidence: number | null;
   classification_override: boolean;
+  needs_review: boolean;
   is_direct_deposit: boolean;
   bill_id: string | null;
 };

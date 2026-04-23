@@ -40,9 +40,9 @@ export async function getPriorityOrderedBuckets(
   if (error) throw error;
 
   const rows = (data ?? []) as unknown as BucketAlloc[];
-  return sortBucketsByPriority(rows.map((r) => ({ ...r, ...r.bucket }))).map(
-    (r) => rows.find((orig) => orig.bucket_id === r.bucket_id)!
-  );
+  return sortBucketsByPriority(
+    rows.map((r) => ({ ...r, type: r.bucket.type, priority_order: r.bucket.priority_order }))
+  ).map(({ type: _t, priority_order: _p, ...r }) => r as BucketAlloc);
 }
 
 export async function rerouteFreedBillAmount(

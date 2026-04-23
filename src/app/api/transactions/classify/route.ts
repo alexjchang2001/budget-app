@@ -2,7 +2,20 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { classifyTransaction } from "@/lib/classification/pipeline";
 
+function verifyCronSecret(request: NextRequest): boolean {
+  const auth = request.headers.get("authorization") ?? "";
+  const secret = process.env.CRON_SECRET ?? "";
+  return auth === `Bearer ${secret}` && secret.length > 0;
+}
+
 export async function POST(request: NextRequest): Promise<Response> {
+  if (!verifyCronSecret(request)) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   let transactionId: string | undefined;
   let tellerTransactionId: string | undefined;
 
@@ -20,7 +33,6 @@ export async function POST(request: NextRequest): Promise<Response> {
     });
   }
 
-  // Resolve teller_transaction_id → internal id if needed
   if (!transactionId && tellerTransactionId) {
     const supabase = createAdminClient();
     const { data } = await supabase

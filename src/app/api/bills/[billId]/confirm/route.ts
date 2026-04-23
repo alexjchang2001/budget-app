@@ -17,7 +17,7 @@ export async function POST(
 ): Promise<Response> {
   let userId: string;
   try {
-    ({ userId } = await requireAuth(request));
+    ({ userId } = await requireAuth());
   } catch {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
@@ -29,14 +29,17 @@ export async function POST(
   let transactionId: string | undefined;
   try {
     const body = (await request.json()) as {
-      confirmed_by: "user" | "teller";
+      confirmed_by: string;
       transaction_id?: string;
     };
-    if (body.confirmed_by !== "user" && body.confirmed_by !== "teller") {
-      throw new Error("invalid confirmed_by");
-    }
-    confirmedBy = body.confirmed_by;
     transactionId = body.transaction_id;
+    if (body.confirmed_by !== "user" && body.confirmed_by !== "teller") {
+      return new Response(JSON.stringify({ error: "confirmed_by must be user|teller" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    confirmedBy = body.confirmed_by as "user" | "teller";
   } catch {
     return new Response(JSON.stringify({ error: "confirmed_by required: user|teller" }), {
       status: 400,

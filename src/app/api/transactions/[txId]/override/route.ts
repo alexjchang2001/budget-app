@@ -10,7 +10,7 @@ export async function POST(
 ): Promise<Response> {
   let userId: string;
   try {
-    ({ userId } = await requireAuth(request));
+    ({ userId } = await requireAuth());
   } catch {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,

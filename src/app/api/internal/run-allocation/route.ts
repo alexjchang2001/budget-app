@@ -12,7 +12,7 @@ import {
 export async function POST(request: NextRequest): Promise<Response> {
   let userId: string;
   try {
-    ({ userId } = await requireAuth(request));
+    ({ userId } = await requireAuth());
   } catch {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
@@ -39,6 +39,22 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   try {
     const supabase = createAdminClient();
+
+    // Verify weekId belongs to caller when explicitly provided
+    if (weekId) {
+      const { data: owned } = await supabase
+        .from("week")
+        .select("id")
+        .eq("id", weekId)
+        .eq("user_id", userId)
+        .single();
+      if (!owned) {
+        return new Response(JSON.stringify({ error: "Week not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
 
     // If no weekId provided, create or find the current provisional week
     if (!weekId) {

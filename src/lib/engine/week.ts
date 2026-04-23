@@ -15,18 +15,18 @@ export type PromoteDepositData = {
   payday: string;
 };
 
-// Returns most recent Friday ≤ date (day=0 is Sunday, 5 is Friday)
+// Returns most recent Friday ≤ date (UTC). Day 5 = Friday.
 export function getMostRecentFriday(date: Date): Date {
   const d = new Date(date);
-  const daysBack = (d.getDay() + 2) % 7; // Fri→0, Sat→1, Sun→2, … Thu→6
-  d.setDate(d.getDate() - daysBack);
-  d.setHours(0, 0, 0, 0);
+  const daysBack = (d.getUTCDay() + 2) % 7; // Fri→0, Sat→1, Sun→2, … Thu→6
+  d.setUTCDate(d.getUTCDate() - daysBack);
+  d.setUTCHours(0, 0, 0, 0);
   return d;
 }
 
 export function getWeekEnd(friday: Date): Date {
   const d = new Date(friday);
-  d.setDate(d.getDate() + 6); // Friday + 6 = Thursday
+  d.setUTCDate(d.getUTCDate() + 6); // Friday + 6 = Thursday
   return d;
 }
 
@@ -56,13 +56,16 @@ export async function reassignFridayTransactions(
 ): Promise<void> {
   const supabase = createAdminClient();
   const fridayStr = friday.toISOString().split("T")[0];
+  // Compute Saturday midnight UTC as the exclusive upper bound
+  const saturdayStr = new Date(
+    Date.UTC(friday.getUTCFullYear(), friday.getUTCMonth(), friday.getUTCDate() + 1)
+  ).toISOString().split("T")[0];
 
-  // Transactions posted on the same Friday belong to the new week, not the prior one
   await supabase
     .from("transaction")
     .update({ week_id: weekId })
     .gte("posted_at", `${fridayStr}T00:00:00.000Z`)
-    .lt("posted_at", `${fridayStr}T23:59:59.999Z`)
+    .lt("posted_at", `${saturdayStr}T00:00:00.000Z`)
     .neq("week_id", weekId);
 }
 

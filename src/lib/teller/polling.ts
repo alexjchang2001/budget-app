@@ -4,6 +4,7 @@ import {
   getTransactions,
   getBalances,
 } from "@/lib/teller/client";
+import { classifyTransaction } from "@/lib/classification/pipeline";
 import { dollarsToCents } from "@/lib/money";
 
 export type PollResult = { inserted: number; skipped: number };
@@ -19,53 +20,52 @@ async function upsertTransaction(
     status: string;
   },
   userId: string
-): Promise<boolean> {
+): Promise<string | null> {
   const supabase = createAdminClient();
   const amountCents = dollarsToCents(Math.abs(parseFloat(tx.amount)));
-  const { error } = await supabase.from("transaction").insert({
+  const { data, error } = await supabase.from("transaction").insert({
     user_id: userId,
     teller_transaction_id: tx.id,
     amount: amountCents,
     description: tx.description,
-    merchant_name: tx.details?.counterparty?.name ?? null,
+    merchant_name: tx.details?.counterparty?.name ?? "",
     posted_at: new Date(tx.date).toISOString(),
-  });
+  }).select("id").single();
 
-  // Duplicate key → already exists; not an error
   if (error) {
-    if (error.code === "23505") return false;
+    if (error.code === "23505") return null;
     throw error;
   }
-  return true;
+  return data?.id ?? null;
 }
 
 export async function pollTransactions(userId: string): Promise<PollResult> {
   const accounts = await getAccounts(userId);
-  let inserted = 0;
+  const insertedIds: string[] = [];
   let skipped = 0;
 
   for (const account of accounts) {
     const transactions = await getTransactions(account.id, userId);
     for (const tx of transactions) {
-      const wasInserted = await upsertTransaction(tx, userId);
-      if (wasInserted) {
-        inserted++;
-        // Enqueue classification — best-effort, don't block polling
-        const base = process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : "http://localhost:3000";
-        fetch(`${base}/api/transactions/classify`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ teller_transaction_id: tx.id }),
-        }).catch(() => {});
+      const id = await upsertTransaction(tx, userId);
+      if (id) {
+        insertedIds.push(id);
       } else {
         skipped++;
       }
     }
   }
 
-  return { inserted, skipped };
+  // Classify all newly inserted transactions in parallel
+  await Promise.all(
+    insertedIds.map((id) =>
+      classifyTransaction(id).catch((err) => {
+        console.error("classify error for tx", id, err);
+      })
+    )
+  );
+
+  return { inserted: insertedIds.length, skipped };
 }
 
 export async function pollBalances(userId: string): Promise<void> {
@@ -73,8 +73,6 @@ export async function pollBalances(userId: string): Promise<void> {
 
   for (const account of accounts) {
     const balance = await getBalances(account.id, userId);
-    // Full multi-account balance table deferred to Sprint 3 (Screen 1 needs it)
-    // Log for observability in the meantime
     console.log(
       `[teller] balance user=${userId} account=${account.name} ` +
       `available=${balance.available} ledger=${balance.ledger}`

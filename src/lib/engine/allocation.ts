@@ -63,7 +63,6 @@ export function routeResidue(
   if (savings) {
     result.set(savings.id, (result.get(savings.id) ?? 0) + residue);
   } else {
-    // No savings bucket: add to first non-bill bucket (should not normally happen)
     const first = buckets.find((b) => b.type !== "bills");
     if (first) result.set(first.id, (result.get(first.id) ?? 0) + residue);
   }
@@ -99,16 +98,6 @@ async function getFoodMin(): Promise<number> {
   return data?.food_weekly_minimum ?? 5000;
 }
 
-export async function createBillStatuses(
-  weekId: string,
-  userId: string
-): Promise<void> {
-  // Delegated to run_allocation_writes RPC for atomicity.
-  // This stub satisfies the AC naming requirement; actual insert is in the RPC.
-  void weekId;
-  void userId;
-}
-
 export async function runAllocationEngine(
   weekId: string,
   income: number,
@@ -125,6 +114,14 @@ export async function runAllocationEngine(
     foodMin
   );
   if (deficitResult.deficit) {
+    // Still create bill_status rows even in deficit so the user can see bills.
+    // Pass empty allocations — the RPC skips bucket_allocation upserts but creates bill_status.
+    await supabase.rpc("run_allocation_writes", {
+      p_week_id: weekId,
+      p_user_id: userId,
+      p_allocations: JSON.stringify([]),
+      p_rounding_residue: 0,
+    });
     return { deficit: true, condition: deficitResult.condition! };
   }
 
@@ -137,12 +134,10 @@ export async function runAllocationEngine(
 
   const allocations: AllocationEntry[] = [];
 
-  // Bills bucket: allocated = bill_total
   if (billsBucket) {
     allocations.push({ bucket_id: billsBucket.id, allocated_amount: billTotal, floor_amount: 0 });
   }
 
-  // Non-bill buckets
   const floors = computeFloors(income, nonBillBuckets);
   for (const [bucketId, amount] of withResidue) {
     allocations.push({

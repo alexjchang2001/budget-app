@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { dollarsToCents } from "@/lib/money";
+import { classifyTransaction } from "@/lib/classification/pipeline";
 
 export function verifyTellerHmac(
   body: string,
@@ -15,6 +16,10 @@ export function verifyTellerHmac(
     if (k && v) parts[k] = v;
   }
   if (!parts["t"] || !parts["v1"]) return false;
+
+  // Reject signatures older than 5 minutes (replay protection)
+  const age = Math.abs(Date.now() / 1000 - parseInt(parts["t"], 10));
+  if (age > 300) return false;
 
   const payload = `${parts["t"]}.${body}`;
   const expected = createHmac("sha256", secret).update(payload).digest("hex");
@@ -104,7 +109,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       teller_transaction_id: tx.id,
       amount: amountCents,
       description: tx.description,
-      merchant_name: tx.details?.counterparty?.name ?? null,
+      merchant_name: tx.details?.counterparty?.name ?? "",
       posted_at: new Date(tx.date).toISOString(),
     })
     .select("id")
@@ -119,15 +124,9 @@ export async function POST(request: NextRequest): Promise<Response> {
   }
 
   if (inserted) {
-    // Enqueue classification — fire and forget
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000";
-    fetch(`${baseUrl}/api/transactions/classify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ transaction_id: inserted.id }),
-    }).catch(() => {});
+    await classifyTransaction(inserted.id).catch((err) => {
+      console.error("classify error for tx", inserted.id, err);
+    });
   }
 
   return new Response(JSON.stringify({ ok: true }), {

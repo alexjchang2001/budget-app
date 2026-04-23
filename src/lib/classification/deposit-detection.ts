@@ -24,12 +24,12 @@ export function isDirectDepositBySignals(
 ): boolean {
   if (tx.amount <= 0) return false;
 
-  const text = `${tx.description} ${tx.merchant_name}`.toLowerCase();
+  const text = `${tx.description} ${tx.merchant_name ?? ""}`.toLowerCase();
   if (!DEPOSIT_KEYWORDS.some((kw) => text.includes(kw))) return false;
 
   if (baselineIncome > 0 && tx.amount < baselineIncome * 0.6) return false;
 
-  const day = new Date(tx.posted_at).getDay();
+  const day = new Date(tx.posted_at).getUTCDay();
   if (!DEPOSIT_DAYS.has(day)) return false;
 
   return true;

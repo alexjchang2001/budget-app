@@ -13,6 +13,7 @@ import {
 type ClassifyResult = {
   bucketId: string | null;
   confidence: number | null;
+  needsReview: boolean;
   isDeposit: boolean;
 };
 
@@ -54,7 +55,8 @@ async function callClaude(
   tx: TransactionRow,
   systemPrompt: string
 ): Promise<ClaudeOutput | null> {
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not set");
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
@@ -77,34 +79,38 @@ async function callClaude(
   try {
     return JSON.parse(text) as ClaudeOutput;
   } catch {
+    console.error("Claude JSON parse failed for tx", tx.id, "raw:", text.slice(0, 200));
     return null;
   }
 }
 
+// Confidence routing:
+//   ≥ 0.85 → auto-classified, needsReview = false
+//   0.60–0.84 → classified but needsReview = true (UI should prompt user confirmation)
+//   < 0.60  → unclassified (bucketId = null), needsReview = true
 function applyConfidenceRouting(
   output: ClaudeOutput,
   bucketTypeMap: Map<string, string>
-): { bucketId: string | null; confidence: number } {
+): { bucketId: string | null; confidence: number; needsReview: boolean } {
   const bucketId = bucketTypeMap.get(output.bucket_type) ?? null;
   if (output.confidence >= 0.85) {
-    return { bucketId, confidence: output.confidence };
+    return { bucketId, confidence: output.confidence, needsReview: false };
   }
   if (output.confidence >= 0.6) {
-    return { bucketId, confidence: output.confidence };
+    return { bucketId, confidence: output.confidence, needsReview: true };
   }
-  return { bucketId: null, confidence: output.confidence };
+  return { bucketId: null, confidence: output.confidence, needsReview: true };
 }
 
 export async function classifyTransaction(txId: string): Promise<ClassifyResult> {
   const context = await fetchTxAndUser(txId);
-  if (!context) return { bucketId: null, confidence: null, isDeposit: false };
+  if (!context) return { bucketId: null, confidence: null, needsReview: false, isDeposit: false };
 
   const { tx, user, buckets } = context;
   const supabase = createAdminClient();
 
-  // Deposit detection runs first — if matched, skip classification
   const isDeposit = await detectAndHandleDeposit(tx, user);
-  if (isDeposit) return { bucketId: null, confidence: null, isDeposit: true };
+  if (isDeposit) return { bucketId: null, confidence: null, needsReview: false, isDeposit: true };
 
   const [examples, bucketTypeMap] = await Promise.all([
     assembleExamples(user.id),
@@ -114,17 +120,18 @@ export async function classifyTransaction(txId: string): Promise<ClassifyResult>
   const systemPrompt = buildSystemPrompt(buckets, examples);
   const output = await callClaude(tx, systemPrompt);
 
-  if (!output) return { bucketId: null, confidence: null, isDeposit: false };
+  if (!output) return { bucketId: null, confidence: null, needsReview: false, isDeposit: false };
 
-  const { bucketId, confidence } = applyConfidenceRouting(output, bucketTypeMap);
+  const { bucketId, confidence, needsReview } = applyConfidenceRouting(output, bucketTypeMap);
 
   await supabase
     .from("transaction")
     .update({
       bucket_id: bucketId,
       classification_confidence: confidence,
+      needs_review: needsReview,
     })
     .eq("id", txId);
 
-  return { bucketId, confidence, isDeposit: false };
+  return { bucketId, confidence, needsReview, isDeposit: false };
 }

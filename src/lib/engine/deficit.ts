@@ -63,8 +63,9 @@ export function computeOptimal(
   buckets: BucketRow[]
 ): DeficitPlan {
   const distributable = Math.max(0, income - billTotal);
-  const debtB = buckets.find((b) => b.type === "debt")!;
-  const savingsB = buckets.find((b) => b.type === "savings")!;
+  const debtB = buckets.find((b) => b.type === "debt");
+  const savingsB = buckets.find((b) => b.type === "savings");
+  if (!debtB || !savingsB) throw new Error("deficit plans require debt and savings buckets");
 
   const debtFull = Math.floor((distributable * debtB.allocation_pct) / 100);
   const savingsFull = Math.floor((distributable * savingsB.allocation_pct) / 100);
@@ -86,9 +87,10 @@ export function computeLongTermResponsible(
   foodMin: number
 ): LTRResult {
   const distributable = Math.max(0, income - billTotal);
-  const debtB = buckets.find((b) => b.type === "debt")!;
-  const savingsB = buckets.find((b) => b.type === "savings")!;
+  const debtB = buckets.find((b) => b.type === "debt");
+  const savingsB = buckets.find((b) => b.type === "savings");
   const flexB = buckets.find((b) => b.type === "flex");
+  if (!debtB || !savingsB) throw new Error("deficit plans require debt and savings buckets");
 
   const debtFloor = Math.floor((income * (debtB.deficit_floor_pct ?? 5)) / 100);
   const savingsFloor = Math.floor((income * (savingsB.deficit_floor_pct ?? 3)) / 100);
@@ -103,7 +105,7 @@ export function computeLongTermResponsible(
     (sum, b) => sum + Math.floor((income * b.allocation_pct) / 100),
     0
   );
-  const cutPct = totalNormal > 0 ? (totalNormal - distributable) / totalNormal : 0;
+  const cutPct = totalNormal > 0 ? Math.max(0, (totalNormal - distributable) / totalNormal) : 0;
   const flexNormal = flexB ? Math.floor((income * flexB.allocation_pct) / 100) : 0;
   const flexProposed = Math.max(0, Math.floor(flexNormal * (1 - cutPct)));
 

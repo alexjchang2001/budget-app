@@ -7,6 +7,10 @@ function verifyCronSecret(request: NextRequest): boolean {
   return auth === `Bearer ${secret}` && secret.length > 0;
 }
 
+export async function GET(request: NextRequest): Promise<Response> {
+  return POST(request);
+}
+
 export async function POST(request: NextRequest): Promise<Response> {
   if (!verifyCronSecret(request)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
