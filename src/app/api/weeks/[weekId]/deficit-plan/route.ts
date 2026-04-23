@@ -4,22 +4,16 @@ import { createAdminClient } from "@/lib/supabase-server";
 import {
   DeficitPlan,
   LTRResult,
+  BucketRow,
+  VALID_PLANS,
+  PlanType,
   computeOptimal,
   computeEmergency,
   computeLongTermResponsible,
 } from "@/lib/engine/deficit";
+import { jsonError, jsonOk } from "@/lib/http";
 
 type Params = { params: { weekId: string } };
-
-const VALID_PLANS = ["optimal", "emergency", "long_term_responsible"] as const;
-type PlanType = (typeof VALID_PLANS)[number];
-
-type BucketRow = {
-  id: string;
-  type: string;
-  allocation_pct: number;
-  deficit_floor_pct: number | null;
-};
 
 async function getWeekContext(
   weekId: string,
@@ -53,7 +47,6 @@ function selectPlan(plan: PlanType, income: number, billTotal: number, buckets: 
   if (plan === "emergency") return computeEmergency(income, billTotal);
   if (plan === "optimal") return computeOptimal(income, billTotal, buckets);
 
-  // long_term_responsible — fall through to emergency if floors insufficient
   const result: LTRResult = computeLongTermResponsible(income, billTotal, buckets, foodMin);
   return "fallback" in result ? computeEmergency(income, billTotal) : result;
 }
@@ -103,10 +96,7 @@ export async function POST(
   try {
     ({ userId } = await requireAuth());
   } catch {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError(401, "Unauthorized");
   }
 
   let plan: PlanType;
@@ -115,28 +105,22 @@ export async function POST(
     if (!VALID_PLANS.includes(body.plan as PlanType)) throw new Error("invalid");
     plan = body.plan as PlanType;
   } catch {
-    return new Response(
-      JSON.stringify({ error: "plan required: optimal|emergency|long_term_responsible" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return jsonError(400, "plan required: optimal|emergency|long_term_responsible");
   }
 
   const { weekId } = params;
   const ctx = await getWeekContext(weekId, userId);
   if (!ctx) {
-    return new Response(JSON.stringify({ error: "Week not found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError(404, "Week not found");
   }
 
   const { income, billTotal, buckets, foodMin, weekEnd } = ctx;
   const computed = selectPlan(plan, income, billTotal, buckets, foodMin);
 
-  await persistAllocations(weekId, userId, computed, buckets, income);
-
   const supabase = createAdminClient();
   const expiresAt = new Date(`${weekEnd}T23:59:59Z`).toISOString();
+
+  await persistAllocations(weekId, userId, computed, buckets, income);
   await supabase
     .from("week")
     .update({
@@ -146,8 +130,5 @@ export async function POST(
     })
     .eq("id", weekId);
 
-  return new Response(
-    JSON.stringify({ ok: true, weekId, plan, computed, expiresAt }),
-    { status: 200, headers: { "Content-Type": "application/json" } }
-  );
+  return jsonOk({ ok: true, weekId, plan, computed, expiresAt });
 }
