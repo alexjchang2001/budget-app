@@ -35,39 +35,32 @@ async function postTellerCredentials(
   if (!res.ok) throw new Error("Failed to store credentials");
 }
 
-export default function Step2TellerConnect({
-  onNext,
-}: {
-  onNext: () => void;
-}): JSX.Element {
+async function handleEnrollmentSuccess(
+  enrollment: TellerEnrollment,
+  setStatus: (s: Status) => void,
+  onNext: () => void,
+): Promise<void> {
+  try {
+    await postTellerCredentials(enrollment.enrollment.id, enrollment.accessToken);
+    setStatus("success");
+    setTimeout(() => onNext(), 600);
+  } catch {
+    setStatus("error");
+  }
+}
+
+export default function Step2TellerConnect({ onNext }: { onNext: () => void }): JSX.Element {
   const [status, setStatus] = useState<Status>("idle");
 
   function handleConnect(): void {
-    const sdk = (window as unknown as { TellerConnect?: TellerConnectSdk })
-      .TellerConnect;
-    if (!sdk) {
-      setStatus("error");
-      return;
-    }
+    const sdk = (window as unknown as { TellerConnect?: TellerConnectSdk }).TellerConnect;
+    if (!sdk) { setStatus("error"); return; }
     setStatus("loading");
-    sdk
-      .setup({
-        applicationId: process.env.NEXT_PUBLIC_TELLER_APP_ID ?? "",
-        onSuccess: async (enrollment) => {
-          try {
-            await postTellerCredentials(
-              enrollment.enrollment.id,
-              enrollment.accessToken,
-            );
-            setStatus("success");
-            setTimeout(() => onNext(), 600);
-          } catch {
-            setStatus("error");
-          }
-        },
-        onExit: () => setStatus("idle"),
-      })
-      .open();
+    sdk.setup({
+      applicationId: process.env.NEXT_PUBLIC_TELLER_APP_ID ?? "",
+      onSuccess: (enrollment) => handleEnrollmentSuccess(enrollment, setStatus, onNext),
+      onExit: () => setStatus("idle"),
+    }).open();
   }
 
   return (

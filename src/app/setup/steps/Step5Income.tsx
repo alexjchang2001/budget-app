@@ -22,17 +22,7 @@ function IncomeField({
   );
 }
 
-export default function Step5Income({
-  baselineIncome,
-  onBaselineChange,
-  shiftMin,
-  onShiftMinChange,
-  shiftMax,
-  onShiftMaxChange,
-  error,
-  loading,
-  onSubmit,
-}: {
+type Step5Props = {
   baselineIncome: string;
   onBaselineChange: (v: string) => void;
   shiftMin: string;
@@ -42,7 +32,10 @@ export default function Step5Income({
   error: string;
   loading: boolean;
   onSubmit: () => void;
-}): JSX.Element {
+};
+
+export default function Step5Income(props: Step5Props): JSX.Element {
+  const { baselineIncome, onBaselineChange, shiftMin, onShiftMinChange, shiftMax, onShiftMaxChange, error, loading, onSubmit } = props;
   return (
     <div className="w-full max-w-sm">
       <h1 className="mb-2 text-2xl font-bold">Your income</h1>

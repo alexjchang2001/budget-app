@@ -22,9 +22,7 @@ const DEFAULT_BUCKETS: BucketDraft[] = [
 ];
 
 function validateIncome(baseline: string, min: string, max: string): string {
-  const b = Number(baseline);
-  const mn = Number(min);
-  const mx = Number(max);
+  const b = Number(baseline), mn = Number(min), mx = Number(max);
   if (!Number.isFinite(b) || b <= 0) return "Baseline weekly income must be > 0.";
   if (!Number.isFinite(mn) || mn <= 0) return "Per-shift minimum must be > 0.";
   if (!Number.isFinite(mx) || mx <= 0) return "Per-shift maximum must be > 0.";
@@ -32,12 +30,36 @@ function validateIncome(baseline: string, min: string, max: string): string {
   return "";
 }
 
-function toBillInput(b: BillDraft): { name: string; amount: number; due_day: number } {
-  return {
-    name: b.name.trim(),
-    amount: Number(b.amount),
-    due_day: Number(b.due_day),
-  };
+function toBillInput(b: BillDraft) {
+  return { name: b.name.trim(), amount: Number(b.amount), due_day: Number(b.due_day) };
+}
+
+type SubmitArgs = {
+  bills: BillDraft[]; buckets: BucketDraft[]; baselineIncome: string;
+  installRef: React.MutableRefObject<BeforeInstallPromptEvent | null>;
+  setError: (v: string) => void; setLoading: (v: boolean) => void;
+  setInstallReady: (v: boolean) => void;
+};
+
+async function submitSetup(args: SubmitArgs, router: ReturnType<typeof useRouter>): Promise<void> {
+  const { bills, buckets, baselineIncome, installRef, setError, setLoading, setInstallReady } = args;
+  setLoading(true);
+  try {
+    const res = await fetch("/api/setup/complete", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bills: bills.map(toBillInput), buckets, baseline_income: Number(baselineIncome) }),
+    });
+    if (!res.ok) throw new Error("Setup failed");
+    if (installRef.current) {
+      setInstallReady(true);
+      try { await installRef.current.prompt(); await installRef.current.userChoice; } catch { /* ignore */ }
+    }
+    router.push("/");
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Setup failed");
+  } finally {
+    setLoading(false);
+  }
 }
 
 export default function SetupPage(): JSX.Element {
@@ -50,52 +72,20 @@ export default function SetupPage(): JSX.Element {
   const [shiftMax, setShiftMax] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [installPromptReady, setInstallPromptReady] = useState(false);
-  const installEventRef = useRef<BeforeInstallPromptEvent | null>(null);
+  const [installReady, setInstallReady] = useState(false);
+  const installRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    function handler(e: Event): void {
-      e.preventDefault();
-      installEventRef.current = e as BeforeInstallPromptEvent;
-    }
+    const handler = (e: Event) => { e.preventDefault(); installRef.current = e as BeforeInstallPromptEvent; };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
   async function handleComplete(): Promise<void> {
-    const validationError = validateIncome(baselineIncome, shiftMin, shiftMax);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    const err = validateIncome(baselineIncome, shiftMin, shiftMax);
+    if (err) { setError(err); return; }
     setError("");
-    setLoading(true);
-    try {
-      const res = await fetch("/api/setup/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bills: bills.map(toBillInput),
-          buckets,
-          baseline_income: Number(baselineIncome),
-        }),
-      });
-      if (!res.ok) throw new Error("Setup failed");
-      if (installEventRef.current) {
-        setInstallPromptReady(true);
-        try {
-          await installEventRef.current.prompt();
-          await installEventRef.current.userChoice;
-        } catch {
-          /* ignore */
-        }
-      }
-      router.push("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Setup failed");
-    } finally {
-      setLoading(false);
-    }
+    await submitSetup({ bills, buckets, baselineIncome, installRef, setError, setLoading, setInstallReady }, router);
   }
 
   return (
@@ -103,32 +93,12 @@ export default function SetupPage(): JSX.Element {
       <p className="mb-6 text-xs text-gray-400">Step {step} of 5</p>
       {step === 1 && <Step1Passkey onNext={() => setStep(2)} />}
       {step === 2 && <Step2TellerConnect onNext={() => setStep(3)} />}
-      {step === 3 && (
-        <Step3Bills bills={bills} onChange={setBills} onNext={() => setStep(4)} />
-      )}
-      {step === 4 && (
-        <Step4Buckets
-          buckets={buckets}
-          onChange={setBuckets}
-          onNext={() => setStep(5)}
-        />
-      )}
-      {step === 5 && (
-        <Step5Income
-          baselineIncome={baselineIncome}
-          onBaselineChange={setBaselineIncome}
-          shiftMin={shiftMin}
-          onShiftMinChange={setShiftMin}
-          shiftMax={shiftMax}
-          onShiftMaxChange={setShiftMax}
-          error={error}
-          loading={loading}
-          onSubmit={handleComplete}
-        />
-      )}
-      {installPromptReady && (
-        <p className="mt-4 text-xs text-gray-400">Install Budget App for quick access…</p>
-      )}
+      {step === 3 && <Step3Bills bills={bills} onChange={setBills} onNext={() => setStep(4)} />}
+      {step === 4 && <Step4Buckets buckets={buckets} onChange={setBuckets} onNext={() => setStep(5)} />}
+      {step === 5 && <Step5Income baselineIncome={baselineIncome} onBaselineChange={setBaselineIncome}
+        shiftMin={shiftMin} onShiftMinChange={setShiftMin} shiftMax={shiftMax} onShiftMaxChange={setShiftMax}
+        error={error} loading={loading} onSubmit={handleComplete} />}
+      {installReady && <p className="mt-4 text-xs text-gray-400">Install Budget App for quick access…</p>}
     </main>
   );
 }

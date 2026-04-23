@@ -68,74 +68,37 @@ function BillRow({
   );
 }
 
-export default function Step3Bills({
-  bills,
-  onChange,
-  onNext,
-}: {
-  bills: BillDraft[];
-  onChange: (bills: BillDraft[]) => void;
-  onNext: () => void;
-}): JSX.Element {
-  const [error, setError] = useState("");
-  const rows = bills.length === 0 ? [emptyBill()] : bills;
+type BillsViewProps = {
+  rows: BillDraft[]; error: string;
+  onUpdate: (i: number, b: BillDraft) => void;
+  onAdd: () => void; onRemove: (i: number) => void; onNext: () => void;
+};
 
-  function update(i: number, b: BillDraft): void {
-    const next = rows.slice();
-    next[i] = b;
-    onChange(next);
-  }
-
-  function add(): void {
-    onChange([...rows, emptyBill()]);
-  }
-
-  function remove(i: number): void {
-    if (rows.length <= 1) return;
-    onChange(rows.filter((_, idx) => idx !== i));
-  }
-
-  function handleNext(): void {
-    const err = validateBills(rows);
-    if (err) {
-      setError(err);
-      return;
-    }
-    setError("");
-    onChange(rows);
-    onNext();
-  }
-
+function BillsView({ rows, error, onUpdate, onAdd, onRemove, onNext }: BillsViewProps): JSX.Element {
   return (
     <div className="w-full max-w-md">
       <h1 className="mb-2 text-2xl font-bold">Your monthly bills</h1>
-      <p className="mb-6 text-sm text-gray-500">
-        Rent, utilities, subscriptions — anything fixed each month.
-      </p>
+      <p className="mb-6 text-sm text-gray-500">Rent, utilities, subscriptions — anything fixed each month.</p>
       {rows.map((b, i) => (
-        <BillRow
-          key={i}
-          bill={b}
-          onChange={(nb) => update(i, nb)}
-          onRemove={() => remove(i)}
-          canRemove={rows.length > 1}
-        />
+        <BillRow key={i} bill={b} onChange={(nb) => onUpdate(i, nb)} onRemove={() => onRemove(i)} canRemove={rows.length > 1} />
       ))}
-      <button
-        onClick={add}
-        className="mb-4 w-full rounded-xl border py-3 text-sm text-gray-600"
-      >
-        + Add bill
-      </button>
-      {error && (
-        <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
-      )}
-      <button
-        onClick={handleNext}
-        className="w-full rounded-xl bg-black py-4 text-base font-semibold text-white disabled:opacity-40"
-      >
-        Next
-      </button>
+      <button onClick={onAdd} className="mb-4 w-full rounded-xl border py-3 text-sm text-gray-600">+ Add bill</button>
+      {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      <button onClick={onNext} className="w-full rounded-xl bg-black py-4 text-base font-semibold text-white disabled:opacity-40">Next</button>
     </div>
   );
+}
+
+export default function Step3Bills({ bills, onChange, onNext }: { bills: BillDraft[]; onChange: (bills: BillDraft[]) => void; onNext: () => void }): JSX.Element {
+  const [error, setError] = useState("");
+  const rows = bills.length === 0 ? [emptyBill()] : bills;
+  const update = (i: number, b: BillDraft) => { const next = rows.slice(); next[i] = b; onChange(next); };
+  const add = () => onChange([...rows, emptyBill()]);
+  const remove = (i: number) => { if (rows.length > 1) onChange(rows.filter((_, idx) => idx !== i)); };
+  function handleNext(): void {
+    const err = validateBills(rows);
+    if (err) { setError(err); return; }
+    setError(""); onChange(rows); onNext();
+  }
+  return <BillsView rows={rows} error={error} onUpdate={update} onAdd={add} onRemove={remove} onNext={handleNext} />;
 }
