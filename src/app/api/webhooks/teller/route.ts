@@ -1,38 +1,9 @@
-import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 import { dollarsToCents } from "@/lib/money";
 import { classifyTransaction } from "@/lib/classification/pipeline";
-
-export function verifyTellerHmac(
-  body: string,
-  signatureHeader: string,
-  secret: string
-): boolean {
-  // Header format: "t=<timestamp>,v1=<hmac_hex>"
-  const parts: Record<string, string> = {};
-  for (const part of signatureHeader.split(",")) {
-    const [k, v] = part.split("=");
-    if (k && v) parts[k] = v;
-  }
-  if (!parts["t"] || !parts["v1"]) return false;
-
-  // Reject signatures older than 5 minutes (replay protection)
-  const age = Math.abs(Date.now() / 1000 - parseInt(parts["t"], 10));
-  if (age > 300) return false;
-
-  const payload = `${parts["t"]}.${body}`;
-  const expected = createHmac("sha256", secret).update(payload).digest("hex");
-
-  try {
-    return timingSafeEqual(
-      Buffer.from(parts["v1"], "hex"),
-      Buffer.from(expected, "hex")
-    );
-  } catch {
-    return false;
-  }
-}
+import { verifyTellerHmac } from "@/lib/teller/hmac";
+import { jsonError, jsonOk } from "@/lib/http";
 
 type TellerWebhookPayload = {
   type: string;
@@ -55,36 +26,24 @@ export async function POST(request: NextRequest): Promise<Response> {
   const secret = process.env.TELLER_SIGNING_SECRET ?? "";
 
   if (!verifyTellerHmac(body, signature, secret)) {
-    return new Response(JSON.stringify({ error: "Invalid signature" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError(401, "Invalid signature");
   }
 
   let payload: TellerWebhookPayload;
   try {
     payload = JSON.parse(body) as TellerWebhookPayload;
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError(400, "Invalid JSON");
   }
 
   if (payload.type !== "transaction.created") {
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonOk({ ok: true });
   }
 
   const tx = payload.payload.transaction;
   const enrollmentId = payload.payload.enrollment_id;
   if (!tx || !enrollmentId) {
-    return new Response(JSON.stringify({ error: "Missing transaction data" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError(400, "Missing transaction data");
   }
 
   const supabase = createAdminClient();
@@ -95,10 +54,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     .single();
 
   if (!user) {
-    return new Response(JSON.stringify({ error: "Unknown enrollment" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError(404, "Unknown enrollment");
   }
 
   const amountCents = dollarsToCents(Math.abs(parseFloat(tx.amount)));
@@ -117,10 +73,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   if (error && error.code !== "23505") {
     console.error("Webhook insert error:", error);
-    return new Response(JSON.stringify({ error: "DB error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError(500, "DB error");
   }
 
   if (inserted) {
@@ -129,8 +82,5 @@ export async function POST(request: NextRequest): Promise<Response> {
     });
   }
 
-  return new Response(JSON.stringify({ ok: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return jsonOk({ ok: true });
 }

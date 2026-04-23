@@ -1,7 +1,6 @@
-export type DeficitCheckResult = {
-  deficit: boolean;
-  condition: "A" | "B" | null;
-};
+export type DeficitCheckResult =
+  | { deficit: true; condition: "A" | "B" }
+  | { deficit: false; condition: null };
 
 export type DeficitPlan = {
   billsAmount: number;
@@ -13,7 +12,10 @@ export type DeficitPlan = {
 
 export type LTRResult = DeficitPlan | { fallback: "emergency"; reason: string };
 
-type BucketRow = {
+export const VALID_PLANS = ["optimal", "emergency", "long_term_responsible"] as const;
+export type PlanType = (typeof VALID_PLANS)[number];
+
+export type BucketRow = {
   id: string;
   type: string;
   allocation_pct: number;
@@ -22,8 +24,7 @@ type BucketRow = {
 
 // All amounts in cents.
 // Condition A: distributable < income * 8%
-// Condition B: after reserving debt floor (5%) and savings floor (3%),
-//              remaining distributable < food_weekly_minimum
+// Condition B: after floors (5% debt + 3% savings), remaining < food_weekly_minimum
 export function checkDeficitTrigger(
   income: number,
   distributable: number,
@@ -49,11 +50,11 @@ export function checkInsolvent(
   return income < billTotal + debtFloor + savingsFloor + foodMin;
 }
 
-export function computeEmergency(income: number, billTotal: number): DeficitPlan {
+export function computeEmergency(income: number, billTotal: number, foodMin = 5000): DeficitPlan {
   const distributable = Math.max(0, income - billTotal);
   const debtAmount = Math.floor(income * 0.05);
   const savingsAmount = Math.floor(income * 0.03);
-  const foodAmount = Math.max(5000, distributable - debtAmount - savingsAmount);
+  const foodAmount = Math.max(foodMin, distributable - debtAmount - savingsAmount);
   return { billsAmount: billTotal, debtAmount, savingsAmount, foodAmount, flexAmount: 0 };
 }
 
@@ -109,15 +110,10 @@ export function computeLongTermResponsible(
   const flexNormal = flexB ? Math.floor((income * flexB.allocation_pct) / 100) : 0;
   const flexProposed = Math.max(0, Math.floor(flexNormal * (1 - cutPct)));
 
-  // Debt and savings get their max(proposed, floor); flex and food absorb the cut.
-  const debtProposed = Math.max(
-    Math.floor((Math.floor((income * debtB.allocation_pct) / 100)) * (1 - cutPct)),
-    debtFloor
-  );
-  const savingsProposed = Math.max(
-    Math.floor((Math.floor((income * savingsB.allocation_pct) / 100)) * (1 - cutPct)),
-    savingsFloor
-  );
+  const debtNormal = Math.floor((income * debtB.allocation_pct) / 100);
+  const savingsNormal = Math.floor((income * savingsB.allocation_pct) / 100);
+  const debtProposed = Math.max(Math.floor(debtNormal * (1 - cutPct)), debtFloor);
+  const savingsProposed = Math.max(Math.floor(savingsNormal * (1 - cutPct)), savingsFloor);
 
   const remaining = distributable - debtProposed - savingsProposed;
   if (remaining < foodMin) {

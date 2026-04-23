@@ -1,12 +1,5 @@
 import { createAdminClient } from "@/lib/supabase-server";
-import { checkDeficitTrigger, DeficitCheckResult } from "@/lib/engine/deficit";
-
-type BucketRow = {
-  id: string;
-  type: string;
-  allocation_pct: number;
-  deficit_floor_pct: number | null;
-};
+import { checkDeficitTrigger, BucketRow } from "@/lib/engine/deficit";
 
 type AllocationEntry = {
   bucket_id: string;
@@ -43,11 +36,10 @@ export function computeFloors(
 ): Map<string, number> {
   const floors = new Map<string, number>();
   for (const b of buckets) {
-    if (b.deficit_floor_pct !== null) {
-      floors.set(b.id, Math.floor((income * Number(b.deficit_floor_pct)) / 100));
-    } else {
-      floors.set(b.id, 0);
-    }
+    floors.set(b.id, b.deficit_floor_pct
+      ? Math.floor((income * Number(b.deficit_floor_pct)) / 100)
+      : 0
+    );
   }
   return floors;
 }
@@ -69,7 +61,7 @@ export function routeResidue(
   return result;
 }
 
-async function getBillTotal(userId: string): Promise<number> {
+export async function getBillTotal(userId: string): Promise<number> {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("bill")
@@ -79,7 +71,7 @@ async function getBillTotal(userId: string): Promise<number> {
   return (data ?? []).reduce((sum, b) => sum + b.amount, 0);
 }
 
-async function getBuckets(userId: string): Promise<BucketRow[]> {
+export async function getBuckets(userId: string): Promise<BucketRow[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("bucket")
@@ -89,7 +81,7 @@ async function getBuckets(userId: string): Promise<BucketRow[]> {
   return (data ?? []) as BucketRow[];
 }
 
-async function getFoodMin(): Promise<number> {
+export async function getFoodMin(): Promise<number> {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("classification_config")
@@ -104,25 +96,20 @@ export async function runAllocationEngine(
   userId: string
 ): Promise<AllocationResult> {
   const supabase = createAdminClient();
-  const billTotal = await getBillTotal(userId);
-  const distributable = computeDistributable(income, billTotal);
-  const foodMin = await getFoodMin();
 
-  const deficitResult: DeficitCheckResult = checkDeficitTrigger(
-    income,
-    distributable,
-    foodMin
-  );
+  const [billTotal, foodMin] = await Promise.all([getBillTotal(userId), getFoodMin()]);
+  const distributable = computeDistributable(income, billTotal);
+
+  const deficitResult = checkDeficitTrigger(income, distributable, foodMin);
   if (deficitResult.deficit) {
-    // Still create bill_status rows even in deficit so the user can see bills.
-    // Pass empty allocations — the RPC skips bucket_allocation upserts but creates bill_status.
+    // Still create bill_status rows even in deficit — pass empty allocations to RPC.
     await supabase.rpc("run_allocation_writes", {
       p_week_id: weekId,
       p_user_id: userId,
       p_allocations: JSON.stringify([]),
       p_rounding_residue: 0,
     });
-    return { deficit: true, condition: deficitResult.condition! };
+    return { deficit: true, condition: deficitResult.condition };
   }
 
   const allBuckets = await getBuckets(userId);
@@ -133,7 +120,6 @@ export async function runAllocationEngine(
   const withResidue = routeResidue(amounts, nonBillBuckets, residue);
 
   const allocations: AllocationEntry[] = [];
-
   if (billsBucket) {
     allocations.push({ bucket_id: billsBucket.id, allocated_amount: billTotal, floor_amount: 0 });
   }

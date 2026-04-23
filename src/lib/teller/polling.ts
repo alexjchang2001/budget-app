@@ -9,7 +9,7 @@ import { dollarsToCents } from "@/lib/money";
 
 export type PollResult = { inserted: number; skipped: number };
 
-async function upsertTransaction(
+export async function upsertTransaction(
   tx: {
     id: string;
     account_id: string;
@@ -41,18 +41,21 @@ async function upsertTransaction(
 
 export async function pollTransactions(userId: string): Promise<PollResult> {
   const accounts = await getAccounts(userId);
+
+  const perAccount = await Promise.all(
+    accounts.map(async (account) => {
+      const transactions = await getTransactions(account.id, userId);
+      const ids = await Promise.all(transactions.map((tx) => upsertTransaction(tx, userId)));
+      return ids;
+    })
+  );
+
   const insertedIds: string[] = [];
   let skipped = 0;
-
-  for (const account of accounts) {
-    const transactions = await getTransactions(account.id, userId);
-    for (const tx of transactions) {
-      const id = await upsertTransaction(tx, userId);
-      if (id) {
-        insertedIds.push(id);
-      } else {
-        skipped++;
-      }
+  for (const ids of perAccount) {
+    for (const id of ids) {
+      if (id) insertedIds.push(id);
+      else skipped++;
     }
   }
 
@@ -70,14 +73,15 @@ export async function pollTransactions(userId: string): Promise<PollResult> {
 
 export async function pollBalances(userId: string): Promise<void> {
   const accounts = await getAccounts(userId);
-
-  for (const account of accounts) {
-    const balance = await getBalances(account.id, userId);
-    console.log(
-      `[teller] balance user=${userId} account=${account.name} ` +
-      `available=${balance.available} ledger=${balance.ledger}`
-    );
-  }
+  await Promise.all(
+    accounts.map(async (account) => {
+      const balance = await getBalances(account.id, userId);
+      console.log(
+        `[teller] balance user=${userId} account=${account.name} ` +
+        `available=${balance.available} ledger=${balance.ledger}`
+      );
+    })
+  );
 }
 
 export async function getAllTellerUserIds(): Promise<string[]> {
