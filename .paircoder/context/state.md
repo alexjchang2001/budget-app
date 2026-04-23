@@ -39,7 +39,7 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 | ID | Title | Priority | Status |
 |----|-------|----------|--------|
 | T3.1 | Screen 0: Setup Flow (5 Steps) | P0 | done ✓ |
-| T3.2 | Screen 1: Home | P0 | pending |
+| T3.2 | Screen 1: Home | P0 | done ✓ |
 | T3.3 | Screen 2: Budget Buckets | P0 | pending |
 | T3.4 | Screen 3: Projection and History | P1 | pending |
 | T3.5 | Claude Vision Schedule Parsing Route | P1 | done ✓ |
@@ -54,6 +54,10 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 | T4.4 | End-to-End Setup and First-Week Flow Validation | P1 | pending |
 
 ## What Was Just Done
+
+- **T3.5 done** (auto-updated by hook)
+
+- **T3.2 done**: GET /api/home (_helpers.ts: getCurrentWeek, getBillStatuses, getRecentTransactions, getAllocPcts, getSyncError, getHomeData); DailyLimit.tsx (getHomeColor axis, 3 color classes); PaydayCountdown.tsx (payday/waiting/deposited states); SummaryPills.tsx (bills X/Y, debt%, savings%); OfflineBanner.tsx (useOfflineStatus, lastUpdated); DeficitModal.tsx (undismissable bottom sheet, 3 plan cards, POST deficit-plan); DepositBanners.tsx (false-pos, manual confirm sheet, projected empty state, sync error); (app)/page.tsx (client fetch, deficit trigger on dailyLimit<0, falsePosId detection); POST /api/deposits/manual-confirm; POST /api/transactions/[txId]/correct-deposit; arch check clean.
 
 - **T3.5 done**: schedule-parser.ts (parseScheduleImage — Claude vision, SYSTEM_PROMPT exact spec, stripFences, validate); POST /api/schedule/parse (multipart upload → Supabase Storage `schedule-screenshots` → parseScheduleImage → insert schedule_parse row); POST /api/schedule/confirm (per_shift_min < per_shift_max validation → update schedule_parse.confirmed_by_user + week.income_projected_low/high); migration 009 (schedule-screenshots storage bucket); arch check clean.
 
@@ -114,7 +118,7 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 
 ## What's Next
 
-1. T3.2: Home screen (GET /api/home, DailyLimit, PaydayCountdown, DeficitModal, DepositBanners, SummaryPills)
+1. T3.3: Budget Buckets screen (GET /api/buckets, BillsBucket, BucketCard, TransactionRow, ClassifyBottomSheet)
 
 
 ## Blockers
