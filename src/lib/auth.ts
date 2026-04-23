@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt, SESSION_DURATION_SECONDS } from "./jwt";
 
 export const AUTH_COOKIE = "auth_token";
@@ -31,6 +31,13 @@ export function setAuthCookie(res: NextResponse, token: string): void {
     ...COOKIE_OPTIONS,
     maxAge: SESSION_DURATION_SECONDS,
   });
+}
+
+/** Verify the CRON_SECRET Bearer token on internal cron/pipeline routes. */
+export function verifyCronSecret(request: NextRequest): boolean {
+  const auth = request.headers.get("authorization") ?? "";
+  const secret = process.env.CRON_SECRET ?? "";
+  return auth === `Bearer ${secret}` && secret.length > 0;
 }
 
 /** Clear the auth cookie (logout). Must mirror all attributes of setAuthCookie. */

@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
     "@simplewebauthn/browser": "^9.0.0",
     "@simplewebauthn/server": "^9.0.0",
     "@supabase/supabase-js": "^2.39.0",
