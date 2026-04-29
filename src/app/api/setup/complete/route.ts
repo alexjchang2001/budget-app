@@ -52,11 +52,12 @@ export async function POST(request: NextRequest): Promise<Response> {
   const perShiftMaxCents = dollarsToCents(body.per_shift_max);
 
   try {
-    await insertBills(userId, body.bills);
-    await insertBuckets(userId, body.buckets);
+    await Promise.all([insertBills(userId, body.bills), insertBuckets(userId, body.buckets)]);
     const weekId = await createAndAllocateWeek(userId, incomeCents);
-    await bootstrapScheduleParse(userId, weekId, perShiftMinCents, perShiftMaxCents);
-    await finalizeUser(userId, incomeCents);
+    await Promise.all([
+      bootstrapScheduleParse(userId, weekId, perShiftMinCents, perShiftMaxCents),
+      finalizeUser(userId, incomeCents),
+    ]);
     return jsonOk({ weekId });
   } catch {
     return jsonError(500, "Setup failed");

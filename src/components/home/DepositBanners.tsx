@@ -81,7 +81,7 @@ export default function DepositBanners({ weekStatus, syncError, recentTransactio
         <div className="mx-4 rounded-lg bg-blue-50 p-3 text-sm">
           <p className="font-medium text-blue-800">Waiting for first deposit — showing estimate</p>
           {credits.length > 0 && (
-            <button onClick={() => setShowSheet(true)} className="mt-1 text-xs text-blue-600 underline">
+            <button onClick={() => { setShowSheet(true); setConfirmErr(""); }} className="mt-1 text-xs text-blue-600 underline">
               Confirm deposit manually
             </button>
           )}

@@ -45,7 +45,7 @@ export default function ParseConfirmCard({ result, weekId, defaultPerShiftMin, d
   const [err, setErr] = useState("");
 
   const isManual = result.status !== "ok";
-  const shiftCount = isManual ? parseInt(manualCount || "0") : result.shiftCount;
+  const shiftCount = isManual ? parseInt(manualCount || "0", 10) : result.shiftCount;
   const perShiftMin = parseFloat(minVal || "0");
   const perShiftMax = parseFloat(maxVal || "0");
   const projLow = Math.round(perShiftMin * shiftCount * 100);
@@ -60,9 +60,10 @@ export default function ParseConfirmCard({ result, weekId, defaultPerShiftMin, d
     setPending(true); setErr("");
     try {
       let parseId: string;
-      const lowParseHasId = result.status === "low" && "parseId" in result;
-      const useExistingParse = !isManual || (lowParseHasId && shiftCount === (result as { shiftCount: number }).shiftCount);
-      if (useExistingParse && "parseId" in result) {
+      const reuseParse =
+        result.status === "ok" ||
+        (result.status === "low" && shiftCount === result.shiftCount);
+      if (reuseParse && "parseId" in result) {
         parseId = result.parseId;
       } else {
         const r = await fetch("/api/schedule/manual-parse", {

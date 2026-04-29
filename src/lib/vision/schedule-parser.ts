@@ -36,8 +36,10 @@ export async function parseScheduleImage(buffer: Buffer, mimeType: string): Prom
   if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not set");
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  const validMime = (mimeType === "image/jpeg" || mimeType === "image/png" || mimeType === "image/gif" || mimeType === "image/webp")
-    ? mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp"
+  const VALID_MIMES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
+  type ValidMime = typeof VALID_MIMES[number];
+  const validMime: ValidMime = (VALID_MIMES as readonly string[]).includes(mimeType)
+    ? mimeType as ValidMime
     : "image/jpeg";
 
   let raw: string;

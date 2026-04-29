@@ -24,7 +24,7 @@ async function revertWeekIfNoDeposits(weekId: string, userId: string): Promise<v
     .select("id", { count: "exact", head: true })
     .eq("week_id", weekId)
     .eq("is_direct_deposit", true);
-  if ((count ?? 0) === 0) {
+  if (count === 0) {
     await supabase
       .from("week")
       .update({ income_actual: null, status: "projected" })
