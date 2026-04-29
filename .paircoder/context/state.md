@@ -41,7 +41,7 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 | T3.1 | Screen 0: Setup Flow (5 Steps) | P0 | done ✓ |
 | T3.2 | Screen 1: Home | P0 | done ✓ |
 | T3.3 | Screen 2: Budget Buckets | P0 | done ✓ |
-| T3.4 | Screen 3: Projection and History | P1 | pending |
+| T3.4 | Screen 3: Projection and History | P1 | done ✓ |
 | T3.5 | Claude Vision Schedule Parsing Route | P1 | done ✓ |
 
 ### Sprint 4 — Polish
@@ -54,6 +54,10 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 | T4.4 | End-to-End Setup and First-Week Flow Validation | P1 | pending |
 
 ## What Was Just Done
+
+- **T3.4 done**: Fixed T3.5 schema bugs (parse route: parsed_shift_count/parsed_shift_days; confirm route: reads parsed_shift_count, stores per_shift_income_min/max + projected_low/high); POST /api/schedule/manual-parse (create parse row for manual entry flows); GET /api/projection (_helpers: getCurrentWeek, getBaselineIncome, getLastPerShift, getClosedWeeks with batched bucket allocations); ScheduleUpload.tsx (hidden file input, POST parse, confidence routing → ParseResult); ParseConfirmCard.tsx (ok: shifts listed + editable range; low: manual count + range; failed: error + manual fallback; preview projected totals; confirm → manual-parse if needed → POST confirm); WeekHistoryRow.tsx (date range, income, deficit badge, totals, tap-to-expand bucket breakdown); (app)/projection/page.tsx (projection section + history list, empty state); arch check clean.
+
+- **T3.3 done** (auto-updated by hook)
 
 - **T3.3 done**: GET /api/buckets (_helpers.ts: getBills, getBucketCards, getUncategorized, getAllBuckets); BillsBucket.tsx (grey dot unpaid, green check confirmed, mark-as-paid → POST /api/bills/[billId]/confirm, teller/user confirmed_at display); BucketCard.tsx (Screen 2 color axis — green<60%, amber 60–89%, red≥90%, expandable transaction list); TransactionRow.tsx (confidence badges: "Confirm?" amber for 0.60–0.84, "X% sure" red for <0.60, override suppresses badge); ClassifyBottomSheet.tsx (current assignment header, all non-bills buckets listed, POST /api/transactions/[txId]/override); (app)/buckets/page.tsx (client fetch, uncategorized section with count badge, ClassifyBottomSheet wired, rounding buffer footer); AppShell badge support (badgeCounts prop, red pill on tab); bucketColors.ts updated to BucketColorLevel type; arch check clean.
 
@@ -120,7 +124,7 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 
 ## What's Next
 
-1. T3.4: Projection and History screen
+1. Sprint 4: T4.1 (PWA Service Worker), T4.2 (Nav Shell), T4.3 (Arch Pass), T4.4 (E2E Validation)
 
 
 ## Blockers

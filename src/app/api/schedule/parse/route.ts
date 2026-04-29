@@ -19,8 +19,8 @@ async function insertScheduleParse(userId: string, weekId: string, screenshotUrl
     user_id: userId,
     week_id: weekId,
     raw_screenshot_url: screenshotUrl,
-    shift_count,
-    shift_days,
+    parsed_shift_count: shift_count,
+    parsed_shift_days: shift_days,
     confidence,
     confirmed_by_user: false,
   }).select("id").single();

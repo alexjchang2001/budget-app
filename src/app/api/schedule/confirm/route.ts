@@ -24,15 +24,21 @@ function parseBody(body: unknown): ConfirmBody | null {
 
 async function loadParse(parseId: string, userId: string): Promise<{ shift_count: number } | null> {
   const supabase = createAdminClient();
-  const { data } = await supabase.from("schedule_parse").select("shift_count, user_id").eq("id", parseId).single();
+  const { data } = await supabase.from("schedule_parse").select("parsed_shift_count, user_id").eq("id", parseId).single();
   if (!data || data.user_id !== userId) return null;
-  return { shift_count: data.shift_count as number };
+  return { shift_count: data.parsed_shift_count as number };
 }
 
-async function applyConfirmation(parseId: string, weekId: string, userId: string, lowCents: number, highCents: number): Promise<void> {
+async function applyConfirmation(parseId: string, weekId: string, userId: string, lowCents: number, highCents: number, perShiftMinCents: number, perShiftMaxCents: number): Promise<void> {
   const supabase = createAdminClient();
   const [parseUpdate, weekUpdate] = await Promise.all([
-    supabase.from("schedule_parse").update({ confirmed_by_user: true }).eq("id", parseId),
+    supabase.from("schedule_parse").update({
+      confirmed_by_user: true,
+      per_shift_income_min: perShiftMinCents,
+      per_shift_income_max: perShiftMaxCents,
+      projected_low: lowCents,
+      projected_high: highCents,
+    }).eq("id", parseId),
     supabase.from("week").update({ income_projected_low: lowCents, income_projected_high: highCents }).eq("id", weekId).eq("user_id", userId),
   ]);
   if (parseUpdate.error) throw new Error("Failed to confirm parse");
@@ -50,11 +56,13 @@ export async function POST(req: NextRequest) {
   const row = await loadParse(parsed.parse_id, userId);
   if (!row) return jsonError(404, "Schedule parse not found");
 
-  const lowCents = dollarsToCents(parsed.per_shift_min * row.shift_count);
-  const highCents = dollarsToCents(parsed.per_shift_max * row.shift_count);
+  const perShiftMinCents = dollarsToCents(parsed.per_shift_min);
+  const perShiftMaxCents = dollarsToCents(parsed.per_shift_max);
+  const lowCents = perShiftMinCents * row.shift_count;
+  const highCents = perShiftMaxCents * row.shift_count;
 
   try {
-    await applyConfirmation(parsed.parse_id, parsed.week_id, userId, lowCents, highCents);
+    await applyConfirmation(parsed.parse_id, parsed.week_id, userId, lowCents, highCents, perShiftMinCents, perShiftMaxCents);
     return jsonOk({ income_projected_low: lowCents, income_projected_high: highCents });
   } catch {
     return jsonError(500, "Internal error");
