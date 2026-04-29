@@ -8,15 +8,7 @@ import SummaryPills from "@/components/home/SummaryPills";
 import DeficitModal from "@/components/home/DeficitModal";
 import DepositBanners from "@/components/home/DepositBanners";
 import OfflineBanner from "@/components/home/OfflineBanner";
-
-type HomeData = {
-  weekId: string; weekStatus: string; dailyLimit: number; openingDailyLimit: number;
-  deficitPlan: string | null; incomeActual: number | null;
-  incomeProjectedLow: number; incomeProjectedHigh: number;
-  billsPaid: number; billsTotal: number; debtPct: number; savingsPct: number;
-  syncError: boolean;
-  recentTransactions: { id: string; amount: number; merchant_name: string; description: string; posted_at: string; is_direct_deposit: boolean }[];
-};
+import type { HomeData } from "@/app/api/home/_helpers";
 
 function findFalsePosDepositId(data: HomeData): string | null {
   const deposits = data.recentTransactions.filter((t) => t.is_direct_deposit);
@@ -28,7 +20,7 @@ function findFalsePosDepositId(data: HomeData): string | null {
 export default function HomePage(): JSX.Element {
   const [data, setData] = useState<HomeData | null>(null);
   const [error, setError] = useState("");
-  const fetchedAt = useRef(Date.now());
+  const fetchedAt = useRef(0);
 
   const load = useCallback(async () => {
     try {
@@ -46,7 +38,7 @@ export default function HomePage(): JSX.Element {
   if (error) return <AppShell><p className="p-6 text-center text-sm text-red-600">{error}</p></AppShell>;
   if (!data) return <AppShell><p className="p-6 text-center text-sm text-gray-400">Loading…</p></AppShell>;
 
-  const showDeficit = data.deficitPlan === null && data.dailyLimit < 0;
+  const showDeficit = data.deficitPlan === null && data.dailyLimit < -100;
   const falsePosId = findFalsePosDepositId(data);
 
   return (

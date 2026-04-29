@@ -4,13 +4,14 @@ import { jsonError, jsonOk } from "@/lib/http";
 import { createAdminClient } from "@/lib/supabase-server";
 import { parseScheduleImage, ParseFailedError } from "@/lib/vision/schedule-parser";
 
+const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+
 async function uploadScreenshot(userId: string, weekId: string, buffer: Buffer, ext: string): Promise<string> {
   const supabase = createAdminClient();
   const path = `${userId}/${weekId}/${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from("schedule-screenshots").upload(path, buffer, { contentType: `image/${ext}` });
   if (error) throw new Error("Storage upload failed");
-  const { data } = supabase.storage.from("schedule-screenshots").getPublicUrl(path);
-  return data.publicUrl;
+  return path;
 }
 
 async function insertScheduleParse(userId: string, weekId: string, screenshotUrl: string, shift_count: number, shift_days: string[], confidence: number): Promise<string> {
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
 
   const file = form.get("image") as File | null;
   if (!file) return jsonError(400, "Missing image field");
+  if (file.size > MAX_BYTES) return jsonError(413, "Image must be under 5 MB");
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const mime = file.type || "image/jpeg";

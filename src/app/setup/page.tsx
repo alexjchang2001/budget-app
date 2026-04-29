@@ -16,9 +16,10 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const DEFAULT_BUCKETS: BucketDraft[] = [
-  { name: "Food", allocation_pct: 40, type: "food", deficit_floor_pct: 25, priority_order: 1 },
-  { name: "Flex", allocation_pct: 40, type: "flex", deficit_floor_pct: null, priority_order: 2 },
+  { name: "Food", allocation_pct: 35, type: "food", deficit_floor_pct: 25, priority_order: 1 },
+  { name: "Flex", allocation_pct: 35, type: "flex", deficit_floor_pct: null, priority_order: 2 },
   { name: "Savings", allocation_pct: 20, type: "savings", deficit_floor_pct: null, priority_order: 3 },
+  { name: "Debt", allocation_pct: 10, type: "debt", deficit_floor_pct: 5, priority_order: 4 },
 ];
 
 function validateIncome(baseline: string, min: string, max: string): string {
@@ -26,7 +27,7 @@ function validateIncome(baseline: string, min: string, max: string): string {
   if (!Number.isFinite(b) || b <= 0) return "Baseline weekly income must be > 0.";
   if (!Number.isFinite(mn) || mn <= 0) return "Per-shift minimum must be > 0.";
   if (!Number.isFinite(mx) || mx <= 0) return "Per-shift maximum must be > 0.";
-  if (mn >= mx) return "Per-shift minimum must be less than maximum.";
+  if (mn > mx) return "Per-shift minimum must not exceed maximum.";
   return "";
 }
 
@@ -36,18 +37,24 @@ function toBillInput(b: BillDraft) {
 
 type SubmitArgs = {
   bills: BillDraft[]; buckets: BucketDraft[]; baselineIncome: string;
+  shiftMin: string; shiftMax: string;
   installRef: React.MutableRefObject<BeforeInstallPromptEvent | null>;
   setError: (v: string) => void; setLoading: (v: boolean) => void;
   setInstallReady: (v: boolean) => void;
 };
 
 async function submitSetup(args: SubmitArgs, router: ReturnType<typeof useRouter>): Promise<void> {
-  const { bills, buckets, baselineIncome, installRef, setError, setLoading, setInstallReady } = args;
+  const { bills, buckets, baselineIncome, shiftMin, shiftMax, installRef, setError, setLoading, setInstallReady } = args;
   setLoading(true);
   try {
     const res = await fetch("/api/setup/complete", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bills: bills.map(toBillInput), buckets, baseline_income: Number(baselineIncome) }),
+      body: JSON.stringify({
+        bills: bills.map(toBillInput), buckets,
+        baseline_income: Number(baselineIncome),
+        per_shift_min: Number(shiftMin),
+        per_shift_max: Number(shiftMax),
+      }),
     });
     if (!res.ok) throw new Error("Setup failed");
     if (installRef.current) {
@@ -85,7 +92,7 @@ export default function SetupPage(): JSX.Element {
     const err = validateIncome(baselineIncome, shiftMin, shiftMax);
     if (err) { setError(err); return; }
     setError("");
-    await submitSetup({ bills, buckets, baselineIncome, installRef, setError, setLoading, setInstallReady }, router);
+    await submitSetup({ bills, buckets, baselineIncome, shiftMin, shiftMax, installRef, setError, setLoading, setInstallReady }, router);
   }
 
   return (

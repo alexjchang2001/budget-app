@@ -62,6 +62,28 @@ export async function createAndAllocateWeek(
   return week.id;
 }
 
+export async function bootstrapScheduleParse(
+  userId: string,
+  weekId: string,
+  perShiftMinCents: number,
+  perShiftMaxCents: number,
+): Promise<void> {
+  const supabase = createAdminClient();
+  await supabase.from("schedule_parse").insert({
+    user_id: userId,
+    week_id: weekId,
+    raw_screenshot_url: "",
+    parsed_shift_count: 0,
+    parsed_shift_days: [],
+    confidence: 1,
+    confirmed_by_user: true,
+    per_shift_income_min: perShiftMinCents,
+    per_shift_income_max: perShiftMaxCents,
+    projected_low: 0,
+    projected_high: 0,
+  });
+}
+
 export async function finalizeUser(
   userId: string,
   incomeCents: number,

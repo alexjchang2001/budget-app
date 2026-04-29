@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { jsonError, jsonOk } from "@/lib/http";
 import { createAdminClient } from "@/lib/supabase-server";
+import { TransactionRow } from "@/lib/supabase";
 import { triggerAllocationForDeposit } from "@/lib/classification/deposit-detection";
 
 type Body = { txId: string };
@@ -13,17 +14,16 @@ function parseBody(body: unknown): Body | null {
   return { txId: b.txId };
 }
 
-async function markAsDeposit(txId: string, userId: string): Promise<{ weekId: string } | null> {
+async function markAsDeposit(txId: string, userId: string): Promise<TransactionRow | null> {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("transaction")
     .update({ is_direct_deposit: true })
     .eq("id", txId)
     .eq("user_id", userId)
-    .select("week_id, amount")
+    .select("*")
     .single();
-  if (!data) return null;
-  return { weekId: data.week_id as string };
+  return (data as TransactionRow | null) ?? null;
 }
 
 export async function POST(req: NextRequest) {
@@ -34,9 +34,13 @@ export async function POST(req: NextRequest) {
   const parsed = parseBody(body);
   if (!parsed) return jsonError(400, "Missing txId");
 
-  const result = await markAsDeposit(parsed.txId, userId).catch(() => null);
-  if (!result) return jsonError(404, "Transaction not found");
+  const tx = await markAsDeposit(parsed.txId, userId).catch(() => null);
+  if (!tx) return jsonError(404, "Transaction not found");
 
-  await triggerAllocationForDeposit(parsed.txId, userId).catch(() => {/* best-effort */});
-  return jsonOk({ ok: true, weekId: result.weekId });
+  try {
+    await triggerAllocationForDeposit(tx, { id: userId });
+  } catch {
+    return jsonError(500, "Allocation failed");
+  }
+  return jsonOk({ ok: true, weekId: tx.week_id });
 }

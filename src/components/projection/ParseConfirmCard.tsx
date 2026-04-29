@@ -38,7 +38,9 @@ export default function ParseConfirmCard({ result, weekId, defaultPerShiftMin, d
   const defaultMax = defaultPerShiftMax > 0 ? (defaultPerShiftMax / 100).toFixed(2) : "";
   const [minVal, setMinVal] = useState(defaultMin);
   const [maxVal, setMaxVal] = useState(defaultMax);
-  const [manualCount, setManualCount] = useState("");
+  const [manualCount, setManualCount] = useState(
+    result.status === "low" && result.shiftCount > 0 ? String(result.shiftCount) : ""
+  );
   const [pending, setPending] = useState(false);
   const [err, setErr] = useState("");
 
@@ -50,23 +52,25 @@ export default function ParseConfirmCard({ result, weekId, defaultPerShiftMin, d
   const projHigh = Math.round(perShiftMax * shiftCount * 100);
 
   async function handleConfirm() {
-    if (perShiftMin <= 0 || perShiftMax <= 0 || perShiftMin >= perShiftMax) {
-      setErr("Enter a valid min/max range (min < max).");
+    if (perShiftMin <= 0 || perShiftMax <= 0 || perShiftMin > perShiftMax) {
+      setErr("Enter a valid min/max range (min ≤ max).");
       return;
     }
     if (isManual && shiftCount < 1) { setErr("Enter shift count."); return; }
     setPending(true); setErr("");
     try {
       let parseId: string;
-      if (isManual) {
+      const lowParseHasId = result.status === "low" && "parseId" in result;
+      const useExistingParse = !isManual || (lowParseHasId && shiftCount === (result as { shiftCount: number }).shiftCount);
+      if (useExistingParse && "parseId" in result) {
+        parseId = result.parseId;
+      } else {
         const r = await fetch("/api/schedule/manual-parse", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ shift_count: shiftCount, week_id: weekId }),
         });
         if (!r.ok) { setErr("Could not save. Try again."); return; }
         parseId = ((await r.json()) as { parse_id: string }).parse_id;
-      } else {
-        parseId = result.parseId;
       }
       const r2 = await fetch("/api/schedule/confirm", {
         method: "POST", headers: { "Content-Type": "application/json" },

@@ -19,7 +19,8 @@ Return JSON only: { "shift_count": <int>, "shift_days": <array of day strings>, 
 Do not include any explanation or markdown outside the JSON object.`;
 
 function stripFences(raw: string): string {
-  return raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  return match ? match[0] : raw.trim();
 }
 
 function validate(parsed: unknown): ParsedSchedule {

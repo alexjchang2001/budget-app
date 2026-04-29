@@ -115,7 +115,13 @@ export async function POST(
   }
 
   const { income, billTotal, buckets, foodMin, weekEnd } = ctx;
-  const computed = selectPlan(plan, income, billTotal, buckets, foodMin);
+  let computed: DeficitPlan;
+  try {
+    computed = selectPlan(plan, income, billTotal, buckets, foodMin);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Plan computation failed";
+    return jsonError(422, msg);
+  }
 
   const supabase = createAdminClient();
   const expiresAt = new Date(`${weekEnd}T23:59:59Z`).toISOString();

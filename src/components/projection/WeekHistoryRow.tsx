@@ -49,7 +49,7 @@ export default function WeekHistoryRow({ week }: { week: ClosedWeek }): JSX.Elem
       {expanded && (
         <ul className="border-t bg-gray-50 px-4 py-2">
           {week.buckets.map((b) => (
-            <li key={b.name} className="flex items-center justify-between py-1.5">
+            <li key={`${b.name}-${b.type}`} className="flex items-center justify-between py-1.5">
               <span className="text-sm capitalize">{b.name}</span>
               <span className="text-xs text-gray-500">
                 {formatCents(b.spentAmount)} / {formatCents(b.allocatedAmount)}

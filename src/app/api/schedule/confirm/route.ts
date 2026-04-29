@@ -18,14 +18,15 @@ function parseBody(body: unknown): ConfirmBody | null {
   if (typeof b.per_shift_min !== "number" || b.per_shift_min <= 0) return null;
   if (typeof b.per_shift_max !== "number" || b.per_shift_max <= 0) return null;
   if (typeof b.week_id !== "string") return null;
-  if (b.per_shift_min >= b.per_shift_max) return null;
+  if (b.per_shift_min > b.per_shift_max) return null;
   return b as unknown as ConfirmBody;
 }
 
-async function loadParse(parseId: string, userId: string): Promise<{ shift_count: number } | null> {
+async function loadParse(parseId: string, userId: string, bodyWeekId: string): Promise<{ shift_count: number } | null> {
   const supabase = createAdminClient();
-  const { data } = await supabase.from("schedule_parse").select("parsed_shift_count, user_id").eq("id", parseId).single();
+  const { data } = await supabase.from("schedule_parse").select("parsed_shift_count, user_id, week_id").eq("id", parseId).single();
   if (!data || data.user_id !== userId) return null;
+  if (data.week_id !== bodyWeekId) return null;
   return { shift_count: data.parsed_shift_count as number };
 }
 
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
   const parsed = parseBody(body);
   if (!parsed) return jsonError(400, "Invalid request body");
 
-  const row = await loadParse(parsed.parse_id, userId);
+  const row = await loadParse(parsed.parse_id, userId, parsed.week_id);
   if (!row) return jsonError(404, "Schedule parse not found");
 
   const perShiftMinCents = dollarsToCents(parsed.per_shift_min);

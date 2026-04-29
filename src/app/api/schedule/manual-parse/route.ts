@@ -21,6 +21,14 @@ export async function POST(req: NextRequest) {
   if (!body) return jsonError(400, "shift_count (≥1) and week_id required");
 
   const supabase = createAdminClient();
+  const { data: week } = await supabase
+    .from("week")
+    .select("id")
+    .eq("id", body.week_id)
+    .eq("user_id", userId)
+    .single();
+  if (!week) return jsonError(404, "Week not found");
+
   const { data, error } = await supabase
     .from("schedule_parse")
     .insert({

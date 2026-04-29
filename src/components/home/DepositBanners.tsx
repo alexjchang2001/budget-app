@@ -26,12 +26,17 @@ async function confirmDeposit(txId: string): Promise<void> {
 }
 
 function FalsePosBanner({ txId, onDone }: { txId: string; onDone: () => void }): JSX.Element {
+  const [err, setErr] = useState("");
   return (
     <div className="mx-4 rounded-lg bg-orange-50 p-3 text-sm">
       <p className="font-medium text-orange-800">Wrong deposit detected</p>
-      <button onClick={() => correctDeposit(txId).then(onDone)} className="mt-1 text-xs text-orange-600 underline">
+      <button
+        onClick={() => correctDeposit(txId).then(onDone).catch(() => setErr("Failed — try again."))}
+        className="mt-1 text-xs text-orange-600 underline"
+      >
         Mark as not a deposit
       </button>
+      {err && <p className="mt-1 text-xs text-red-600">{err}</p>}
     </div>
   );
 }
@@ -55,6 +60,7 @@ function ManualConfirmSheet({ txs, onConfirm, onClose }: { txs: RecentTx[]; onCo
 
 export default function DepositBanners({ weekStatus, syncError, recentTransactions, falsePosDepositId, onDepositConfirmed }: Props): JSX.Element {
   const [showSheet, setShowSheet] = useState(false);
+  const [confirmErr, setConfirmErr] = useState("");
 
   if (syncError) {
     return (
@@ -80,10 +86,14 @@ export default function DepositBanners({ weekStatus, syncError, recentTransactio
             </button>
           )}
         </div>
+        {confirmErr && <p className="mx-4 text-xs text-red-600">{confirmErr}</p>}
         {showSheet && (
           <ManualConfirmSheet
             txs={credits}
-            onConfirm={(id) => { confirmDeposit(id).then(onDepositConfirmed); setShowSheet(false); }}
+            onConfirm={(id) => {
+              setShowSheet(false);
+              confirmDeposit(id).then(onDepositConfirmed).catch(() => setConfirmErr("Confirm failed — try again."));
+            }}
             onClose={() => setShowSheet(false)}
           />
         )}
