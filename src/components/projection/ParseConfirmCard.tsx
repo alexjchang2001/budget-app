@@ -33,11 +33,33 @@ function RangeInputs({ minVal, maxVal, onMinChange, onMaxChange }: {
   );
 }
 
-export default function ParseConfirmCard({ result, weekId, defaultPerShiftMin, defaultPerShiftMax, onConfirmed, onDismiss }: Props): JSX.Element {
-  const defaultMin = defaultPerShiftMin > 0 ? (defaultPerShiftMin / 100).toFixed(2) : "";
-  const defaultMax = defaultPerShiftMax > 0 ? (defaultPerShiftMax / 100).toFixed(2) : "";
-  const [minVal, setMinVal] = useState(defaultMin);
-  const [maxVal, setMaxVal] = useState(defaultMax);
+function ParseStatusHeader({ result, manualCount, onChange }: {
+  result: ParseResult; manualCount: string; onChange: (v: string) => void;
+}): JSX.Element | null {
+  if (result.status === "ok") {
+    return (
+      <div className="mb-3">
+        <p className="font-semibold">{result.shiftCount} shifts detected</p>
+        <p className="text-sm text-gray-500">{result.shiftDays.join(", ")}</p>
+      </div>
+    );
+  }
+  const isLow = result.status === "low";
+  return (
+    <div className="mb-3">
+      <p className={`font-semibold ${isLow ? "text-amber-600" : "text-red-600"}`}>
+        {isLow ? "Couldn’t read your schedule clearly" : "Something went wrong"}
+      </p>
+      <p className="mb-2 text-sm text-gray-500">
+        {isLow ? "Enter your shift count manually." : "Try a clearer screenshot or enter shifts manually."}
+      </p>
+      <input type="number" min="1" value={manualCount} onChange={(e) => onChange(e.target.value)}
+        className="rounded-lg border px-3 py-2 text-sm" placeholder="Number of shifts" />
+    </div>
+  );
+}
+
+function useConfirmLogic(result: ParseResult, weekId: string, onConfirmed: () => void) {
   const [manualCount, setManualCount] = useState(
     result.status === "low" && result.shiftCount > 0 ? String(result.shiftCount) : ""
   );
@@ -46,23 +68,16 @@ export default function ParseConfirmCard({ result, weekId, defaultPerShiftMin, d
 
   const isManual = result.status !== "ok";
   const shiftCount = isManual ? parseInt(manualCount || "0", 10) : result.shiftCount;
-  const perShiftMin = parseFloat(minVal || "0");
-  const perShiftMax = parseFloat(maxVal || "0");
-  const projLow = Math.round(perShiftMin * shiftCount * 100);
-  const projHigh = Math.round(perShiftMax * shiftCount * 100);
 
-  async function handleConfirm() {
+  async function handleConfirm(perShiftMin: number, perShiftMax: number) {
     if (perShiftMin <= 0 || perShiftMax <= 0 || perShiftMin > perShiftMax) {
-      setErr("Enter a valid min/max range (min ≤ max).");
-      return;
+      setErr("Enter a valid min/max range (min ≤ max)."); return;
     }
     if (isManual && shiftCount < 1) { setErr("Enter shift count."); return; }
     setPending(true); setErr("");
     try {
       let parseId: string;
-      const reuseParse =
-        result.status === "ok" ||
-        (result.status === "low" && shiftCount === result.shiftCount);
+      const reuseParse = result.status === "ok" || (result.status === "low" && shiftCount === result.shiftCount);
       if (reuseParse && "parseId" in result) {
         parseId = result.parseId;
       } else {
@@ -84,42 +99,34 @@ export default function ParseConfirmCard({ result, weekId, defaultPerShiftMin, d
     }
   }
 
+  return { manualCount, setManualCount, pending, err, shiftCount, handleConfirm };
+}
+
+export default function ParseConfirmCard({ result, weekId, defaultPerShiftMin, defaultPerShiftMax, onConfirmed, onDismiss }: Props): JSX.Element {
+  const defaultMin = defaultPerShiftMin > 0 ? (defaultPerShiftMin / 100).toFixed(2) : "";
+  const defaultMax = defaultPerShiftMax > 0 ? (defaultPerShiftMax / 100).toFixed(2) : "";
+  const [minVal, setMinVal] = useState(defaultMin);
+  const [maxVal, setMaxVal] = useState(defaultMax);
+  const { manualCount, setManualCount, pending, err, shiftCount, handleConfirm } = useConfirmLogic(result, weekId, onConfirmed);
+
+  const perShiftMin = parseFloat(minVal || "0");
+  const perShiftMax = parseFloat(maxVal || "0");
+  const projLow = Math.round(perShiftMin * shiftCount * 100);
+  const projHigh = Math.round(perShiftMax * shiftCount * 100);
+
   return (
     <div className="mx-4 rounded-2xl border border-gray-200 bg-white p-4">
-      {result.status === "ok" && (
-        <div className="mb-3">
-          <p className="font-semibold">{result.shiftCount} shifts detected</p>
-          <p className="text-sm text-gray-500">{result.shiftDays.join(", ")}</p>
-        </div>
-      )}
-      {result.status === "low" && (
-        <div className="mb-3">
-          <p className="font-semibold text-amber-600">Couldn&apos;t read your schedule clearly</p>
-          <p className="mb-2 text-sm text-gray-500">Enter your shift count manually.</p>
-          <input type="number" min="1" value={manualCount} onChange={(e) => setManualCount(e.target.value)}
-            className="rounded-lg border px-3 py-2 text-sm" placeholder="Number of shifts" />
-        </div>
-      )}
-      {result.status === "failed" && (
-        <div className="mb-3">
-          <p className="font-semibold text-red-600">Something went wrong</p>
-          <p className="mb-2 text-sm text-gray-500">Try a clearer screenshot or enter shifts manually.</p>
-          <input type="number" min="1" value={manualCount} onChange={(e) => setManualCount(e.target.value)}
-            className="rounded-lg border px-3 py-2 text-sm" placeholder="Number of shifts" />
-        </div>
-      )}
+      <ParseStatusHeader result={result} manualCount={manualCount} onChange={setManualCount} />
       <div className="mb-3">
         <RangeInputs minVal={minVal} maxVal={maxVal} onMinChange={setMinVal} onMaxChange={setMaxVal} />
       </div>
       {shiftCount > 0 && perShiftMin > 0 && perShiftMax > 0 && (
-        <p className="mb-3 text-sm text-gray-500">
-          Projected: {formatCents(projLow)}–{formatCents(projHigh)}
-        </p>
+        <p className="mb-3 text-sm text-gray-500">Projected: {formatCents(projLow)}–{formatCents(projHigh)}</p>
       )}
       {err && <p className="mb-2 text-xs text-red-600">{err}</p>}
       <div className="flex gap-2">
         <button type="button" onClick={onDismiss} className="flex-1 rounded-xl border py-2.5 text-sm font-semibold">Cancel</button>
-        <button type="button" disabled={pending} onClick={() => void handleConfirm()}
+        <button type="button" disabled={pending} onClick={() => void handleConfirm(perShiftMin, perShiftMax)}
           className="flex-1 rounded-xl bg-black py-2.5 text-sm font-semibold text-white disabled:opacity-50">
           {pending ? "Saving…" : "Confirm"}
         </button>
