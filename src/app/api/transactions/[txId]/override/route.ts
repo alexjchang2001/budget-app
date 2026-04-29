@@ -1,75 +1,50 @@
 import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase-server";
+import { jsonError, jsonOk } from "@/lib/http";
 
 type Params = { params: { txId: string } };
 
-function jsonResponse(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-async function parseBucketId(
-  request: NextRequest
-): Promise<string | Response> {
+async function parseBucketId(request: NextRequest): Promise<string | null> {
   try {
     const body = (await request.json()) as { bucket_id: string };
-    if (!body.bucket_id) throw new Error("missing bucket_id");
+    if (!body.bucket_id) return null;
     return body.bucket_id;
   } catch {
-    return jsonResponse(400, { error: "bucket_id required" });
+    return null;
   }
 }
 
-async function verifyOwnership(
-  userId: string,
-  txId: string,
-  bucketId: string
-): Promise<Response | null> {
+async function verifyBucketOwnership(userId: string, bucketId: string): Promise<boolean> {
   const supabase = createAdminClient();
-  const { data: tx } = await supabase
-    .from("transaction")
-    .select("id, user_id")
-    .eq("id", txId)
-    .eq("user_id", userId)
-    .single();
-  if (!tx) return jsonResponse(404, { error: "Transaction not found" });
-
-  const { data: bucket } = await supabase
-    .from("bucket")
-    .select("id")
-    .eq("id", bucketId)
-    .eq("user_id", userId)
-    .single();
-  if (!bucket) return jsonResponse(404, { error: "Bucket not found" });
-  return null;
+  const { data } = await supabase.from("bucket").select("id").eq("id", bucketId).eq("user_id", userId).single();
+  return !!data;
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: Params
-): Promise<Response> {
+export async function POST(request: NextRequest, { params }: Params): Promise<Response> {
   let userId: string;
   try {
     ({ userId } = await requireAuth());
   } catch {
-    return jsonResponse(401, { error: "Unauthorized" });
+    return jsonError(401, "Unauthorized");
   }
 
-  const bucketIdOrRes = await parseBucketId(request);
-  if (bucketIdOrRes instanceof Response) return bucketIdOrRes;
+  const bucketId = await parseBucketId(request);
+  if (!bucketId) return jsonError(400, "bucket_id required");
 
-  const ownership = await verifyOwnership(userId, params.txId, bucketIdOrRes);
-  if (ownership) return ownership;
+  const owned = await verifyBucketOwnership(userId, bucketId);
+  if (!owned) return jsonError(404, "Bucket not found");
 
   const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("transaction")
-    .update({ bucket_id: bucketIdOrRes, classification_override: true })
-    .eq("id", params.txId);
+  const { error } = await supabase.rpc("override_transaction_bucket", {
+    p_tx_id: params.txId,
+    p_new_bucket_id: bucketId,
+    p_user_id: userId,
+  });
 
-  if (error) return jsonResponse(500, { error: "Update failed" });
-  return jsonResponse(200, { ok: true });
+  if (error) {
+    if (error.message?.includes("transaction not found")) return jsonError(404, "Transaction not found");
+    return jsonError(500, "Update failed");
+  }
+  return jsonOk({ ok: true });
 }

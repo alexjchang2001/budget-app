@@ -1,17 +1,17 @@
 # Current State
 
-> Last updated: 2026-04-11
+> Last updated: 2026-04-29
 
 ## Active Plan
 
 **Plan:** plan-2026-04-budget-app-mvp
 **Title:** Budget App MVP — Full Initial Build
-**Status:** Planned (ready to start Sprint 1)
-**Current Sprint:** Sprint 1 — Foundation
+**Status:** In Progress
+**Current Sprint:** Sprint 4 — Polish
 
 ## Current Focus
 
-Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — ready to begin T1.1 (Project Scaffold and Tooling).
+Sprint 3 complete. PR open for feat/sprint-3-frontend → master. Sprint 4 (T4.1–T4.4) is next.
 
 ## Task Status
 
@@ -38,11 +38,11 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 
 | ID | Title | Priority | Status |
 |----|-------|----------|--------|
-| T3.1 | Screen 0: Setup Flow (5 Steps) | P0 | pending |
-| T3.2 | Screen 1: Home | P0 | pending |
-| T3.3 | Screen 2: Budget Buckets | P0 | pending |
-| T3.4 | Screen 3: Projection and History | P1 | pending |
-| T3.5 | Claude Vision Schedule Parsing Route | P1 | pending |
+| T3.1 | Screen 0: Setup Flow (5 Steps) | P0 | done ✓ |
+| T3.2 | Screen 1: Home | P0 | done ✓ |
+| T3.3 | Screen 2: Budget Buckets | P0 | done ✓ |
+| T3.4 | Screen 3: Projection and History | P1 | done ✓ |
+| T3.5 | Claude Vision Schedule Parsing Route | P1 | done ✓ |
 
 ### Sprint 4 — Polish
 
@@ -54,6 +54,22 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 | T4.4 | End-to-End Setup and First-Week Flow Validation | P1 | pending |
 
 ## What Was Just Done
+
+- **Sprint 3 review + fix pass**: Multi-agent code review (Nayru + Laverna + cross-module) identified P0–P2 issues. All fixed and committed: P0 manual-confirm arg bug; P1 override RPC, correct-deposit revert, setup debt bucket + shiftMin/Max, schedule confirm week_id check, deficit-plan 422 on missing bucket; P2 home page imports, DepositBanners error state, WeekHistoryRow key, stripFences regex, ParseConfirmCard pre-fill, 5 MB parse guard, private screenshot bucket. Simplify pass: ParseConfirmCard reuseParse logic, DepositBanners confirmErr clear, correct-deposit null guard, setup parallel DB ops, VALID_MIMES constant. Three new migrations: 010 (realloc confirmed bills), 011 (override_transaction_bucket RPC), 012 (private screenshots bucket). PR open for merge.
+
+- **T3.4 done**: Fixed T3.5 schema bugs (parse route: parsed_shift_count/parsed_shift_days; confirm route: reads parsed_shift_count, stores per_shift_income_min/max + projected_low/high); POST /api/schedule/manual-parse (create parse row for manual entry flows); GET /api/projection (_helpers: getCurrentWeek, getBaselineIncome, getLastPerShift, getClosedWeeks with batched bucket allocations); ScheduleUpload.tsx (hidden file input, POST parse, confidence routing → ParseResult); ParseConfirmCard.tsx (ok: shifts listed + editable range; low: manual count + range; failed: error + manual fallback; preview projected totals; confirm → manual-parse if needed → POST confirm); WeekHistoryRow.tsx (date range, income, deficit badge, totals, tap-to-expand bucket breakdown); (app)/projection/page.tsx (projection section + history list, empty state); arch check clean.
+
+- **T3.3 done** (auto-updated by hook)
+
+- **T3.3 done**: GET /api/buckets (_helpers.ts: getBills, getBucketCards, getUncategorized, getAllBuckets); BillsBucket.tsx (grey dot unpaid, green check confirmed, mark-as-paid → POST /api/bills/[billId]/confirm, teller/user confirmed_at display); BucketCard.tsx (Screen 2 color axis — green<60%, amber 60–89%, red≥90%, expandable transaction list); TransactionRow.tsx (confidence badges: "Confirm?" amber for 0.60–0.84, "X% sure" red for <0.60, override suppresses badge); ClassifyBottomSheet.tsx (current assignment header, all non-bills buckets listed, POST /api/transactions/[txId]/override); (app)/buckets/page.tsx (client fetch, uncategorized section with count badge, ClassifyBottomSheet wired, rounding buffer footer); AppShell badge support (badgeCounts prop, red pill on tab); bucketColors.ts updated to BucketColorLevel type; arch check clean.
+
+- **T3.5 done** (auto-updated by hook)
+
+- **T3.2 done**: GET /api/home (_helpers.ts: getCurrentWeek, getBillStatuses, getRecentTransactions, getAllocPcts, getSyncError, getHomeData); DailyLimit.tsx (getHomeColor axis, 3 color classes); PaydayCountdown.tsx (payday/waiting/deposited states); SummaryPills.tsx (bills X/Y, debt%, savings%); OfflineBanner.tsx (useOfflineStatus, lastUpdated); DeficitModal.tsx (undismissable bottom sheet, 3 plan cards, POST deficit-plan); DepositBanners.tsx (false-pos, manual confirm sheet, projected empty state, sync error); (app)/page.tsx (client fetch, deficit trigger on dailyLimit<0, falsePosId detection); POST /api/deposits/manual-confirm; POST /api/transactions/[txId]/correct-deposit; arch check clean.
+
+- **T3.5 done**: schedule-parser.ts (parseScheduleImage — Claude vision, SYSTEM_PROMPT exact spec, stripFences, validate); POST /api/schedule/parse (multipart upload → Supabase Storage `schedule-screenshots` → parseScheduleImage → insert schedule_parse row); POST /api/schedule/confirm (per_shift_min < per_shift_max validation → update schedule_parse.confirmed_by_user + week.income_projected_low/high); migration 009 (schedule-screenshots storage bucket); arch check clean.
+
+- **T3.1 done** (auto-updated by hook)
 
 - **T2.5 done** (auto-updated by hook)
 
@@ -104,17 +120,15 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 - Created plan `plan-2026-04-budget-app-mvp` with 18 tasks across 4 sprints
 - Wrote full task content (objective, implementation plan, acceptance criteria, verification) for all 18 tasks
 - Plan file at: `.claude/plans/bubbly-beaming-hopcroft.md`
+- Sprint 3 plan approved; feat/sprint-3-frontend branch created
+- T3.1: Setup flow complete — CI green, arch clean
+
 
 ## What's Next
 
-**Sprint 2 complete.** Next: **T3.1** (Screen 0: Setup Flow — 5 Steps) — first Sprint 3 task
+1. Merge feat/sprint-3-frontend PR → master
+2. Sprint 4: T4.1 (PWA Service Worker), T4.2 (Nav Shell), T4.3 (Arch Pass), T4.4 (E2E Validation)
 
-```bash
-bpsai-pair task update T1.2 --status in_progress
-```
-
-Dependency order for Sprint 1:
-1. ~~T1.1~~ → T1.2 → T1.3 → T1.4
 
 ## Blockers
 
