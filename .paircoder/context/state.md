@@ -1,17 +1,17 @@
 # Current State
 
-> Last updated: 2026-04-11
+> Last updated: 2026-04-29
 
 ## Active Plan
 
 **Plan:** plan-2026-04-budget-app-mvp
 **Title:** Budget App MVP — Full Initial Build
-**Status:** Planned (ready to start Sprint 1)
-**Current Sprint:** Sprint 1 — Foundation
+**Status:** In Progress
+**Current Sprint:** Sprint 4 — Polish
 
 ## Current Focus
 
-Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — ready to begin T1.1 (Project Scaffold and Tooling).
+Sprint 3 complete. PR open for feat/sprint-3-frontend → master. Sprint 4 (T4.1–T4.4) is next.
 
 ## Task Status
 
@@ -54,6 +54,8 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 | T4.4 | End-to-End Setup and First-Week Flow Validation | P1 | pending |
 
 ## What Was Just Done
+
+- **Sprint 3 review + fix pass**: Multi-agent code review (Nayru + Laverna + cross-module) identified P0–P2 issues. All fixed and committed: P0 manual-confirm arg bug; P1 override RPC, correct-deposit revert, setup debt bucket + shiftMin/Max, schedule confirm week_id check, deficit-plan 422 on missing bucket; P2 home page imports, DepositBanners error state, WeekHistoryRow key, stripFences regex, ParseConfirmCard pre-fill, 5 MB parse guard, private screenshot bucket. Simplify pass: ParseConfirmCard reuseParse logic, DepositBanners confirmErr clear, correct-deposit null guard, setup parallel DB ops, VALID_MIMES constant. Three new migrations: 010 (realloc confirmed bills), 011 (override_transaction_bucket RPC), 012 (private screenshots bucket). PR open for merge.
 
 - **T3.4 done**: Fixed T3.5 schema bugs (parse route: parsed_shift_count/parsed_shift_days; confirm route: reads parsed_shift_count, stores per_shift_income_min/max + projected_low/high); POST /api/schedule/manual-parse (create parse row for manual entry flows); GET /api/projection (_helpers: getCurrentWeek, getBaselineIncome, getLastPerShift, getClosedWeeks with batched bucket allocations); ScheduleUpload.tsx (hidden file input, POST parse, confidence routing → ParseResult); ParseConfirmCard.tsx (ok: shifts listed + editable range; low: manual count + range; failed: error + manual fallback; preview projected totals; confirm → manual-parse if needed → POST confirm); WeekHistoryRow.tsx (date range, income, deficit badge, totals, tap-to-expand bucket breakdown); (app)/projection/page.tsx (projection section + history list, empty state); arch check clean.
 
@@ -124,7 +126,8 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 
 ## What's Next
 
-1. Sprint 4: T4.1 (PWA Service Worker), T4.2 (Nav Shell), T4.3 (Arch Pass), T4.4 (E2E Validation)
+1. Merge feat/sprint-3-frontend PR → master
+2. Sprint 4: T4.1 (PWA Service Worker), T4.2 (Nav Shell), T4.3 (Arch Pass), T4.4 (E2E Validation)
 
 
 ## Blockers
