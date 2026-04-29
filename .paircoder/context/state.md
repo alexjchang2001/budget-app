@@ -40,7 +40,7 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 |----|-------|----------|--------|
 | T3.1 | Screen 0: Setup Flow (5 Steps) | P0 | done ✓ |
 | T3.2 | Screen 1: Home | P0 | done ✓ |
-| T3.3 | Screen 2: Budget Buckets | P0 | pending |
+| T3.3 | Screen 2: Budget Buckets | P0 | done ✓ |
 | T3.4 | Screen 3: Projection and History | P1 | pending |
 | T3.5 | Claude Vision Schedule Parsing Route | P1 | done ✓ |
 
@@ -54,6 +54,8 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 | T4.4 | End-to-End Setup and First-Week Flow Validation | P1 | pending |
 
 ## What Was Just Done
+
+- **T3.3 done**: GET /api/buckets (_helpers.ts: getBills, getBucketCards, getUncategorized, getAllBuckets); BillsBucket.tsx (grey dot unpaid, green check confirmed, mark-as-paid → POST /api/bills/[billId]/confirm, teller/user confirmed_at display); BucketCard.tsx (Screen 2 color axis — green<60%, amber 60–89%, red≥90%, expandable transaction list); TransactionRow.tsx (confidence badges: "Confirm?" amber for 0.60–0.84, "X% sure" red for <0.60, override suppresses badge); ClassifyBottomSheet.tsx (current assignment header, all non-bills buckets listed, POST /api/transactions/[txId]/override); (app)/buckets/page.tsx (client fetch, uncategorized section with count badge, ClassifyBottomSheet wired, rounding buffer footer); AppShell badge support (badgeCounts prop, red pill on tab); bucketColors.ts updated to BucketColorLevel type; arch check clean.
 
 - **T3.5 done** (auto-updated by hook)
 
@@ -118,7 +120,7 @@ Plan created from spec v4. 18 tasks across 4 sprints. No source code yet — rea
 
 ## What's Next
 
-1. T3.3: Budget Buckets screen (GET /api/buckets, BillsBucket, BucketCard, TransactionRow, ClassifyBottomSheet)
+1. T3.4: Projection and History screen
 
 
 ## Blockers
