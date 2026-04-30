@@ -128,11 +128,12 @@ Sprint 3 complete. PR open for feat/sprint-3-frontend → master. Sprint 4 (T4.1
 - T3.1: Setup flow complete — CI green, arch clean
 - T4.1: PWA service worker stub — registered sw.js from root layout, cache-first for assets, network-first for API paths, install prompt wired in setup page
 - T4.2: Nav shell lifted to (app)/layout.tsx — server-side badge count fetch, middleware auth guard, uncategorized-count route, AppShell stripped from all pages
+- T4.3: Architecture compliance pass — bpsai-pair arch check src/ exits 0 errors, 0 warnings; all files under 200 lines
 
 
 ## What's Next
 
-1. T4.3: Architecture Compliance Pass
+1. T4.4: End-to-End Setup and First-Week Flow Validation
 
 
 ## Blockers
