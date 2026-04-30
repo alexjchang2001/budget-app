@@ -125,11 +125,12 @@ Sprint 3 complete. PR open for feat/sprint-3-frontend → master. Sprint 4 (T4.1
 - Sprint 3 plan approved; feat/sprint-3-frontend branch created
 - T3.1: Setup flow complete — CI green, arch clean
 - T4.1: PWA service worker stub — registered sw.js from root layout, cache-first for assets, network-first for API paths, install prompt wired in setup page
+- T4.2: Nav shell lifted to (app)/layout.tsx — server-side badge count fetch, middleware auth guard, uncategorized-count route, AppShell stripped from all pages
 
 
 ## What's Next
 
-1. T4.2: App Navigation Shell and Tab Bar
+1. T4.3: Architecture Compliance Pass
 
 
 ## Blockers
