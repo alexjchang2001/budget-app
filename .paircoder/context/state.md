@@ -122,12 +122,12 @@ Sprint 3 complete. PR open for feat/sprint-3-frontend → master. Sprint 4 (T4.1
 - Plan file at: `.claude/plans/bubbly-beaming-hopcroft.md`
 - Sprint 3 plan approved; feat/sprint-3-frontend branch created
 - T3.1: Setup flow complete — CI green, arch clean
+- T4.1: PWA service worker stub — registered sw.js from root layout, cache-first for assets, network-first for API paths, install prompt wired in setup page
 
 
 ## What's Next
 
-1. Merge feat/sprint-3-frontend PR → master
-2. Sprint 4: T4.1 (PWA Service Worker), T4.2 (Nav Shell), T4.3 (Arch Pass), T4.4 (E2E Validation)
+1. T4.2: App Navigation Shell and Tab Bar
 
 
 ## Blockers
