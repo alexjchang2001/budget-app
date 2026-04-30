@@ -33,3 +33,4 @@
 {"signal_type": "api_failure", "severity": "warning", "timestamp": "2026-04-30T16:13:12.679279+00:00", "session_id": "", "payload": {"stop_reason": "subagent_stop", "error_detail": "StopFailure hook triggered"}, "source": "automated"}
 {"signal_type": "api_failure", "severity": "warning", "timestamp": "2026-04-30T16:15:45.473579+00:00", "session_id": "", "payload": {"stop_reason": "subagent_stop", "error_detail": "StopFailure hook triggered"}, "source": "automated"}
 {"signal_type": "api_failure", "severity": "warning", "timestamp": "2026-04-30T16:18:51.721553+00:00", "session_id": "", "payload": {"stop_reason": "subagent_stop", "error_detail": "StopFailure hook triggered"}, "source": "automated"}
+{"signal_type": "api_failure", "severity": "warning", "timestamp": "2026-04-30T16:32:44.969455+00:00", "session_id": "", "payload": {"stop_reason": "subagent_stop", "error_detail": "StopFailure hook triggered"}, "source": "automated"}
