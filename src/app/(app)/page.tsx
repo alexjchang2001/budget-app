@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import AppShell from "@/components/AppShell";
 import DailyLimit from "@/components/home/DailyLimit";
 import PaydayCountdown from "@/components/home/PaydayCountdown";
 import SummaryPills from "@/components/home/SummaryPills";
@@ -35,24 +34,22 @@ export default function HomePage(): JSX.Element {
 
   useEffect(() => { void load(); }, [load]);
 
-  if (error) return <AppShell><p className="p-6 text-center text-sm text-red-600">{error}</p></AppShell>;
-  if (!data) return <AppShell><p className="p-6 text-center text-sm text-gray-400">Loading…</p></AppShell>;
+  if (error) return <p className="p-6 text-center text-sm text-red-600">{error}</p>;
+  if (!data) return <p className="p-6 text-center text-sm text-gray-400">Loading…</p>;
 
   const showDeficit = data.deficitPlan === null && data.dailyLimit < -100;
   const falsePosId = findFalsePosDepositId(data);
 
   return (
-    <AppShell>
-      <main className="flex flex-col gap-4 pb-4">
-        <OfflineBanner lastUpdated={fetchedAt.current} />
-        <DailyLimit dailyLimit={data.dailyLimit} openingDailyLimit={data.openingDailyLimit} />
-        <PaydayCountdown weekStatus={data.weekStatus} incomeActual={data.incomeActual}
-          incomeProjectedLow={data.incomeProjectedLow} incomeProjectedHigh={data.incomeProjectedHigh} />
-        <SummaryPills billsPaid={data.billsPaid} billsTotal={data.billsTotal} debtPct={data.debtPct} savingsPct={data.savingsPct} />
-        <DepositBanners weekStatus={data.weekStatus} syncError={data.syncError}
-          recentTransactions={data.recentTransactions} falsePosDepositId={falsePosId} onDepositConfirmed={load} />
-        {showDeficit && <DeficitModal weekId={data.weekId} dailyLimit={data.dailyLimit} onPlanChosen={load} />}
-      </main>
-    </AppShell>
+    <main className="flex flex-col gap-4 pb-4">
+      <OfflineBanner lastUpdated={fetchedAt.current} />
+      <DailyLimit dailyLimit={data.dailyLimit} openingDailyLimit={data.openingDailyLimit} />
+      <PaydayCountdown weekStatus={data.weekStatus} incomeActual={data.incomeActual}
+        incomeProjectedLow={data.incomeProjectedLow} incomeProjectedHigh={data.incomeProjectedHigh} />
+      <SummaryPills billsPaid={data.billsPaid} billsTotal={data.billsTotal} debtPct={data.debtPct} savingsPct={data.savingsPct} />
+      <DepositBanners weekStatus={data.weekStatus} syncError={data.syncError}
+        recentTransactions={data.recentTransactions} falsePosDepositId={falsePosId} onDepositConfirmed={load} />
+      {showDeficit && <DeficitModal weekId={data.weekId} dailyLimit={data.dailyLimit} onPlanChosen={load} />}
+    </main>
   );
 }

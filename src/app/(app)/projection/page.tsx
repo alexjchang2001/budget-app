@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import AppShell from "@/components/AppShell";
 import ScheduleUpload from "@/components/projection/ScheduleUpload";
 import ParseConfirmCard from "@/components/projection/ParseConfirmCard";
 import WeekHistoryRow from "@/components/projection/WeekHistoryRow";
@@ -63,25 +62,23 @@ export default function ProjectionPage(): JSX.Element {
 
   function handleConfirmed() { setParseResult(null); void load(); }
 
-  if (error) return <AppShell><p className="p-6 text-center text-sm text-red-600">{error}</p></AppShell>;
-  if (!data) return <AppShell><p className="p-6 text-center text-sm text-gray-400">Loading…</p></AppShell>;
+  if (error) return <p className="p-6 text-center text-sm text-red-600">{error}</p>;
+  if (!data) return <p className="p-6 text-center text-sm text-gray-400">Loading…</p>;
 
   return (
-    <AppShell>
-      <main className="flex flex-col gap-4 pb-4 pt-4">
-        <IncomeProjectionSection
-          data={data} parseResult={parseResult}
-          onResult={setParseResult} onConfirmed={handleConfirmed} onDismiss={() => setParseResult(null)}
-        />
-        <section className="mx-4 rounded-2xl border border-gray-200 bg-white">
-          <h2 className="px-4 pt-4 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">History</h2>
-          {data.closedWeeks.length === 0 ? (
-            <p className="px-4 pb-4 text-sm text-gray-400">Your history will appear here after your first full week.</p>
-          ) : (
-            <ul>{data.closedWeeks.map((week) => <li key={week.id}><WeekHistoryRow week={week} /></li>)}</ul>
-          )}
-        </section>
-      </main>
-    </AppShell>
+    <main className="flex flex-col gap-4 pb-4 pt-4">
+      <IncomeProjectionSection
+        data={data} parseResult={parseResult}
+        onResult={setParseResult} onConfirmed={handleConfirmed} onDismiss={() => setParseResult(null)}
+      />
+      <section className="mx-4 rounded-2xl border border-gray-200 bg-white">
+        <h2 className="px-4 pt-4 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">History</h2>
+        {data.closedWeeks.length === 0 ? (
+          <p className="px-4 pb-4 text-sm text-gray-400">Your history will appear here after your first full week.</p>
+        ) : (
+          <ul>{data.closedWeeks.map((week) => <li key={week.id}><WeekHistoryRow week={week} /></li>)}</ul>
+        )}
+      </section>
+    </main>
   );
 }
