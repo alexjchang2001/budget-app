@@ -48,12 +48,14 @@ Sprint 3 complete. PR open for feat/sprint-3-frontend → master. Sprint 4 (T4.1
 
 | ID | Title | Priority | Status |
 |----|-------|----------|--------|
-| T4.1 | PWA Service Worker Stub and Offline State | P0 | pending |
+| T4.1 | PWA Service Worker Stub and Offline State | P0 | done ✓ |
 | T4.2 | App Navigation Shell and Tab Bar | P0 | pending |
 | T4.3 | Architecture Compliance Pass | P0 | pending |
 | T4.4 | End-to-End Setup and First-Week Flow Validation | P1 | pending |
 
 ## What Was Just Done
+
+- **T4.1 done** (auto-updated by hook)
 
 - **Sprint 3 review + fix pass**: Multi-agent code review (Nayru + Laverna + cross-module) identified P0–P2 issues. All fixed and committed: P0 manual-confirm arg bug; P1 override RPC, correct-deposit revert, setup debt bucket + shiftMin/Max, schedule confirm week_id check, deficit-plan 422 on missing bucket; P2 home page imports, DepositBanners error state, WeekHistoryRow key, stripFences regex, ParseConfirmCard pre-fill, 5 MB parse guard, private screenshot bucket. Simplify pass: ParseConfirmCard reuseParse logic, DepositBanners confirmErr clear, correct-deposit null guard, setup parallel DB ops, VALID_MIMES constant. Three new migrations: 010 (realloc confirmed bills), 011 (override_transaction_bucket RPC), 012 (private screenshots bucket). PR open for merge.
 
