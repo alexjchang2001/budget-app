@@ -49,11 +49,13 @@ Sprint 3 complete. PR open for feat/sprint-3-frontend → master. Sprint 4 (T4.1
 | ID | Title | Priority | Status |
 |----|-------|----------|--------|
 | T4.1 | PWA Service Worker Stub and Offline State | P0 | done ✓ |
-| T4.2 | App Navigation Shell and Tab Bar | P0 | pending |
+| T4.2 | App Navigation Shell and Tab Bar | P0 | done ✓ |
 | T4.3 | Architecture Compliance Pass | P0 | pending |
 | T4.4 | End-to-End Setup and First-Week Flow Validation | P1 | pending |
 
 ## What Was Just Done
+
+- **T4.2 done** (auto-updated by hook)
 
 - **T4.1 done** (auto-updated by hook)
 
