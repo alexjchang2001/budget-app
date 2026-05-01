@@ -48,12 +48,20 @@ Sprint 3 complete. PR open for feat/sprint-3-frontend → master. Sprint 4 (T4.1
 
 | ID | Title | Priority | Status |
 |----|-------|----------|--------|
-| T4.1 | PWA Service Worker Stub and Offline State | P0 | pending |
-| T4.2 | App Navigation Shell and Tab Bar | P0 | pending |
-| T4.3 | Architecture Compliance Pass | P0 | pending |
-| T4.4 | End-to-End Setup and First-Week Flow Validation | P1 | pending |
+| T4.1 | PWA Service Worker Stub and Offline State | P0 | done ✓ |
+| T4.2 | App Navigation Shell and Tab Bar | P0 | done ✓ |
+| T4.3 | Architecture Compliance Pass | P0 | done ✓ |
+| T4.4 | End-to-End Setup and First-Week Flow Validation | P1 | done ✓ |
 
 ## What Was Just Done
+
+- **T4.4 done** (auto-updated by hook)
+
+- **T4.3 done** (auto-updated by hook)
+
+- **T4.2 done** (auto-updated by hook)
+
+- **T4.1 done** (auto-updated by hook)
 
 - **Sprint 3 review + fix pass**: Multi-agent code review (Nayru + Laverna + cross-module) identified P0–P2 issues. All fixed and committed: P0 manual-confirm arg bug; P1 override RPC, correct-deposit revert, setup debt bucket + shiftMin/Max, schedule confirm week_id check, deficit-plan 422 on missing bucket; P2 home page imports, DepositBanners error state, WeekHistoryRow key, stripFences regex, ParseConfirmCard pre-fill, 5 MB parse guard, private screenshot bucket. Simplify pass: ParseConfirmCard reuseParse logic, DepositBanners confirmErr clear, correct-deposit null guard, setup parallel DB ops, VALID_MIMES constant. Three new migrations: 010 (realloc confirmed bills), 011 (override_transaction_bucket RPC), 012 (private screenshots bucket). PR open for merge.
 
@@ -122,12 +130,15 @@ Sprint 3 complete. PR open for feat/sprint-3-frontend → master. Sprint 4 (T4.1
 - Plan file at: `.claude/plans/bubbly-beaming-hopcroft.md`
 - Sprint 3 plan approved; feat/sprint-3-frontend branch created
 - T3.1: Setup flow complete — CI green, arch clean
+- T4.1: PWA service worker stub — registered sw.js from root layout, cache-first for assets, network-first for API paths, install prompt wired in setup page
+- T4.2: Nav shell lifted to (app)/layout.tsx — server-side badge count fetch, middleware auth guard, uncategorized-count route, AppShell stripped from all pages
+- T4.3: Architecture compliance pass — bpsai-pair arch check src/ exits 0 errors, 0 warnings; all files under 200 lines
+- T4.4: End-to-end flow validation complete — all 10 scenarios pass, docs/flow-validation.md written. Sprint 4 done.
 
 
 ## What's Next
 
-1. Merge feat/sprint-3-frontend PR → master
-2. Sprint 4: T4.1 (PWA Service Worker), T4.2 (Nav Shell), T4.3 (Arch Pass), T4.4 (E2E Validation)
+1. Open PR: feat/sprint-4-polish → master
 
 
 ## Blockers

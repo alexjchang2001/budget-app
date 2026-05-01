@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { verifyJwt } from "@/lib/jwt";
 import { AUTH_COOKIE } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase-server";
+import AppShell from "@/components/AppShell";
+import { getUncategorizedCount } from "./_helpers";
 
 export default async function AppLayout({
   children,
@@ -29,5 +31,14 @@ export default async function AppLayout({
   if (error || !data) redirect("/login");
   if (!data.setup_complete) redirect("/setup");
 
-  return <>{children}</>;
+  const uncatCount = await getUncategorizedCount(userId).catch((err) => {
+    console.error("[layout] getUncategorizedCount failed:", err);
+    return 0;
+  });
+
+  return (
+    <AppShell badgeCounts={uncatCount > 0 ? { "/buckets": uncatCount } : {}}>
+      {children}
+    </AppShell>
+  );
 }

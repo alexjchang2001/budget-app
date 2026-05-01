@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ServiceWorkerInit from "@/components/ui/ServiceWorkerInit";
 
 export const metadata: Metadata = {
   title: "Budget App",
@@ -14,7 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ServiceWorkerInit />
+        {children}
+      </body>
     </html>
   );
 }

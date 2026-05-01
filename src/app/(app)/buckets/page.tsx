@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import AppShell from "@/components/AppShell";
 import BillsBucket from "@/components/buckets/BillsBucket";
 import BucketCard from "@/components/buckets/BucketCard";
 import TransactionRow from "@/components/buckets/TransactionRow";
 import ClassifyBottomSheet from "@/components/buckets/ClassifyBottomSheet";
+import PageStatus from "@/components/ui/PageStatus";
 import { formatCents } from "@/lib/money";
 import type { BucketsData, TxItem } from "@/app/api/buckets/_helpers";
 
@@ -42,13 +42,13 @@ export default function BucketsPage(): JSX.Element {
 
   useEffect(() => { void load(); }, [load]);
 
-  if (error) return <AppShell><p className="p-6 text-center text-sm text-red-600">{error}</p></AppShell>;
-  if (!data) return <AppShell><p className="p-6 text-center text-sm text-gray-400">Loading…</p></AppShell>;
+  if (error) return <PageStatus error={error} />;
+  if (!data) return <PageStatus />;
 
   const uncatCount = data.uncategorized.length;
 
   return (
-    <AppShell badgeCounts={uncatCount > 0 ? { "/buckets": uncatCount } : undefined}>
+    <>
       <main className="flex flex-col gap-4 pb-4 pt-4">
         <BillsBucket bills={data.bills} onRefresh={load} />
         {data.buckets.map((bucket) => (
@@ -60,6 +60,6 @@ export default function BucketsPage(): JSX.Element {
         )}
       </main>
       <ClassifyBottomSheet tx={activeTx} allBuckets={data.allBuckets} onClose={() => setActiveTx(null)} onOverrideSuccess={load} />
-    </AppShell>
+    </>
   );
 }
