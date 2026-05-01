@@ -5,6 +5,7 @@ import BillsBucket from "@/components/buckets/BillsBucket";
 import BucketCard from "@/components/buckets/BucketCard";
 import TransactionRow from "@/components/buckets/TransactionRow";
 import ClassifyBottomSheet from "@/components/buckets/ClassifyBottomSheet";
+import PageStatus from "@/components/ui/PageStatus";
 import { formatCents } from "@/lib/money";
 import type { BucketsData, TxItem } from "@/app/api/buckets/_helpers";
 
@@ -41,8 +42,8 @@ export default function BucketsPage(): JSX.Element {
 
   useEffect(() => { void load(); }, [load]);
 
-  if (error) return <p className="p-6 text-center text-sm text-red-600">{error}</p>;
-  if (!data) return <p className="p-6 text-center text-sm text-gray-400">Loading…</p>;
+  if (error) return <PageStatus error={error} />;
+  if (!data) return <PageStatus />;
 
   const uncatCount = data.uncategorized.length;
 

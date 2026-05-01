@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt, SESSION_DURATION_SECONDS } from "./jwt";
 
-export const AUTH_COOKIE = "auth_token";
+export { AUTH_COOKIE } from "./auth-cookie";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,

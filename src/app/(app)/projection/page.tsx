@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import ScheduleUpload from "@/components/projection/ScheduleUpload";
 import ParseConfirmCard from "@/components/projection/ParseConfirmCard";
 import WeekHistoryRow from "@/components/projection/WeekHistoryRow";
+import PageStatus from "@/components/ui/PageStatus";
 import { formatCents } from "@/lib/money";
 import type { ProjectionData } from "@/app/api/projection/_helpers";
 import type { ParseResult } from "@/components/projection/ScheduleUpload";
@@ -62,8 +63,8 @@ export default function ProjectionPage(): JSX.Element {
 
   function handleConfirmed() { setParseResult(null); void load(); }
 
-  if (error) return <p className="p-6 text-center text-sm text-red-600">{error}</p>;
-  if (!data) return <p className="p-6 text-center text-sm text-gray-400">Loading…</p>;
+  if (error) return <PageStatus error={error} />;
+  if (!data) return <PageStatus />;
 
   return (
     <main className="flex flex-col gap-4 pb-4 pt-4">

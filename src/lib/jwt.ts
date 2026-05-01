@@ -26,7 +26,7 @@ export async function signJwt(userId: string): Promise<string> {
 
 /** Verify a JWT and return the userId (sub claim). Throws on invalid/expired. */
 export async function verifyJwt(token: string): Promise<{ userId: string }> {
-  const { payload } = await jwtVerify(token, getSecret());
+  const { payload } = await jwtVerify(token, getSecret(), { algorithms: ["HS256"] });
   const userId = payload.sub;
   if (typeof userId !== "string" || !userId) {
     throw new Error("Invalid JWT: missing sub claim");

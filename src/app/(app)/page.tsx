@@ -7,6 +7,7 @@ import SummaryPills from "@/components/home/SummaryPills";
 import DeficitModal from "@/components/home/DeficitModal";
 import DepositBanners from "@/components/home/DepositBanners";
 import OfflineBanner from "@/components/home/OfflineBanner";
+import PageStatus from "@/components/ui/PageStatus";
 import type { HomeData } from "@/app/api/home/_helpers";
 
 function findFalsePosDepositId(data: HomeData): string | null {
@@ -34,8 +35,8 @@ export default function HomePage(): JSX.Element {
 
   useEffect(() => { void load(); }, [load]);
 
-  if (error) return <p className="p-6 text-center text-sm text-red-600">{error}</p>;
-  if (!data) return <p className="p-6 text-center text-sm text-gray-400">Loading…</p>;
+  if (error) return <PageStatus error={error} />;
+  if (!data) return <PageStatus />;
 
   const showDeficit = data.deficitPlan === null && data.dailyLimit < -100;
   const falsePosId = findFalsePosDepositId(data);

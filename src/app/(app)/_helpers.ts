@@ -18,6 +18,7 @@ export async function getUncategorizedCount(userId: string): Promise<number> {
     .select("*", { count: "exact", head: true })
     .eq("week_id", week.id)
     .eq("is_direct_deposit", false)
+    .eq("user_id", userId)
     .is("bucket_id", null);
 
   return count ?? 0;

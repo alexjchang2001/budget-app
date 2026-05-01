@@ -31,7 +31,10 @@ export default async function AppLayout({
   if (error || !data) redirect("/login");
   if (!data.setup_complete) redirect("/setup");
 
-  const uncatCount = await getUncategorizedCount(userId);
+  const uncatCount = await getUncategorizedCount(userId).catch((err) => {
+    console.error("[layout] getUncategorizedCount failed:", err);
+    return 0;
+  });
 
   return (
     <AppShell badgeCounts={uncatCount > 0 ? { "/buckets": uncatCount } : {}}>
