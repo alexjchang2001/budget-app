@@ -1,7 +1,7 @@
 {
   "crons": [
-    { "path": "/api/cron/teller-poll", "schedule": "*/30 * * * *" },
-    { "path": "/api/cron/teller-balance", "schedule": "0 */4 * * *" }
+    { "path": "/api/cron/teller-poll", "schedule": "0 0 * * * *" },
+    { "path": "/api/cron/teller-balance", "schedule": "0 1 * * *" }
   ],
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "required",
