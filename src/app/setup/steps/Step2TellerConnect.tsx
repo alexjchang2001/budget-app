@@ -40,6 +40,7 @@ async function handleEnrollmentSuccess(
   setStatus: (s: Status) => void,
   onNext: () => void,
 ): Promise<void> {
+  +  console.log("Teller onSuccess:", JSON.stringify(enrollment));
   try {
     await postTellerCredentials(enrollment.enrollment.id, enrollment.accessToken);
     setStatus("success");
