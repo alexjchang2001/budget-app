@@ -49,22 +49,22 @@ async function handleEnrollmentSuccess(
   }
 }
 
+function handleConnect(setStatus: (s: Status) => void, onNext: () => void): void {
+  const sdk = (window as unknown as { TellerConnect?: TellerConnectSdk }).TellerConnect;
+  if (!sdk) { setStatus("error"); return; }
+  setStatus("loading");
+  sdk.setup({
+    applicationId: process.env.NEXT_PUBLIC_TELLER_APP_ID ?? "",
+    onSuccess: (enrollment) => {
+      console.log("Teller onSuccess:", enrollment);
+      handleEnrollmentSuccess(enrollment, setStatus, onNext);
+    },
+    onExit: () => setStatus("idle"),
+  }).open();
+}
+
 export default function Step2TellerConnect({ onNext }: { onNext: () => void }): JSX.Element {
   const [status, setStatus] = useState<Status>("idle");
-
-  function handleConnect(): void {
-    const sdk = (window as unknown as { TellerConnect?: TellerConnectSdk }).TellerConnect;
-    if (!sdk) { setStatus("error"); return; }
-    setStatus("loading");
-    sdk.setup({
-      applicationId: process.env.NEXT_PUBLIC_TELLER_APP_ID ?? "",
-      onSuccess: (enrollment) => {
-        console.log("Teller onSuccess:", enrollment);
-        handleEnrollmentSuccess(enrollment, setStatus, onNext);
-      },
-      onExit: () => setStatus("idle"),
-    }).open();
-  }
 
   return (
     <div className="w-full max-w-sm">
@@ -87,7 +87,7 @@ export default function Step2TellerConnect({ onNext }: { onNext: () => void }): 
         </p>
       )}
       <button
-        onClick={handleConnect}
+        onClick={() => handleConnect(setStatus, onNext)}
         disabled={status === "loading" || status === "success"}
         className="w-full rounded-xl bg-black py-4 text-base font-semibold text-white disabled:opacity-40"
       >
