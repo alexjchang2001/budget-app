@@ -28,7 +28,7 @@ VALUES (
     {"merchant_name": "BP",          "bucket_type": "flex"},
     {"merchant_name": "ExxonMobil",  "bucket_type": "flex"},
     {"merchant_name": "Whole Foods", "bucket_type": "food"},
-    {"merchant_name": "Trader Joe'\''s", "bucket_type": "food"},
+    {"merchant_name": "Trader Joe''s", "bucket_type": "food"},
     {"merchant_name": "Kroger",      "bucket_type": "food"},
     {"merchant_name": "Safeway",     "bucket_type": "food"},
     {"merchant_name": "Aldi",        "bucket_type": "food"},
