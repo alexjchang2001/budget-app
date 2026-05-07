@@ -56,7 +56,7 @@ function handleConnect(setStatus: (s: Status) => void, onNext: () => void): void
   sdk.setup({
     applicationId: process.env.NEXT_PUBLIC_TELLER_APP_ID ?? "",
     onSuccess: (enrollment) => {
-      console.log("Teller onSuccess:", enrollment);
+      console.log("Teller onSuccess: enrollment.id=", enrollment?.enrollment?.id);
       handleEnrollmentSuccess(enrollment, setStatus, onNext);
     },
     onExit: () => setStatus("idle"),
