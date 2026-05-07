@@ -59,7 +59,10 @@ export default function Step2TellerConnect({ onNext }: { onNext: () => void }): 
     setStatus("loading");
     sdk.setup({
       applicationId: process.env.NEXT_PUBLIC_TELLER_APP_ID ?? "",
-      onSuccess: (enrollment) => handleEnrollmentSuccess(enrollment, setStatus, onNext),
+      onSuccess: (enrollment) => {
+        console.log("Teller onSuccess:", enrollment);
+        handleEnrollmentSuccess(enrollment, setStatus, onNext);
+      },
       onExit: () => setStatus("idle"),
     }).open();
   }
