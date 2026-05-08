@@ -61,12 +61,13 @@ export async function reassignFridayTransactions(
     Date.UTC(friday.getUTCFullYear(), friday.getUTCMonth(), friday.getUTCDate() + 1)
   ).toISOString().split("T")[0];
 
-  await supabase
+  const { error } = await supabase
     .from("transaction")
     .update({ week_id: weekId })
     .gte("posted_at", `${fridayStr}T00:00:00.000Z`)
     .lt("posted_at", `${saturdayStr}T00:00:00.000Z`)
     .neq("week_id", weekId);
+  if (error) throw error;
 }
 
 export async function promoteProvisionalWeek(
