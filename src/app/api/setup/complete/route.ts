@@ -51,16 +51,20 @@ export async function POST(request: NextRequest): Promise<Response> {
   const perShiftMinCents = dollarsToCents(body.per_shift_min);
   const perShiftMaxCents = dollarsToCents(body.per_shift_max);
 
+  let step = "bills/buckets";
   try {
     await Promise.all([insertBills(userId, body.bills), insertBuckets(userId, body.buckets)]);
+    step = "week";
     const weekId = await createAndAllocateWeek(userId, incomeCents);
+    step = "schedule/finalize";
     await Promise.all([
       bootstrapScheduleParse(userId, weekId, perShiftMinCents, perShiftMaxCents),
       finalizeUser(userId, incomeCents),
     ]);
     return jsonOk({ weekId });
   } catch (err) {
-    console.error("Setup failed:", err);
-    return jsonError(500, "Setup failed");
+    const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err);
+    console.error(`Setup failed at step=${step}:`, err);
+    return jsonError(500, `[${step}] ${msg}`);
   }
 }
