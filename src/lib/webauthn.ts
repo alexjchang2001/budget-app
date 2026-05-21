@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { SignJWT, jwtVerify } from "jose";
 import {
@@ -23,13 +23,20 @@ function getChallengeSecret(): Uint8Array {
 
 export function getRpId(): string {
   if (process.env.WEBAUTHN_RP_ID) return process.env.WEBAUTHN_RP_ID;
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  try {
+    const host = headers().get("host");
+    if (host) return host.split(":")[0];
+  } catch { /* outside request context */ }
   return "localhost";
 }
 
 export function getOrigin(): string {
   if (process.env.WEBAUTHN_ORIGIN) return process.env.WEBAUTHN_ORIGIN;
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  try {
+    const host = headers().get("host");
+    const proto = headers().get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+    if (host) return `${proto}://${host}`;
+  } catch { /* outside request context */ }
   return "http://localhost:3000";
 }
 
