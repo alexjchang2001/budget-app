@@ -22,11 +22,15 @@ function getChallengeSecret(): Uint8Array {
 }
 
 export function getRpId(): string {
-  return process.env.WEBAUTHN_RP_ID ?? "localhost";
+  if (process.env.WEBAUTHN_RP_ID) return process.env.WEBAUTHN_RP_ID;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  return "localhost";
 }
 
 export function getOrigin(): string {
-  return process.env.WEBAUTHN_ORIGIN ?? "http://localhost:3000";
+  if (process.env.WEBAUTHN_ORIGIN) return process.env.WEBAUTHN_ORIGIN;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  return "http://localhost:3000";
 }
 
 /** Store a HMAC-signed (HS256, 5-min TTL) challenge payload in an HttpOnly cookie. */
