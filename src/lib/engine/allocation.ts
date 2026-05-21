@@ -106,7 +106,7 @@ export async function runAllocationEngine(
     const { error: deficitRpcError } = await supabase.rpc("run_allocation_writes", {
       p_week_id: weekId,
       p_user_id: userId,
-      p_allocations: JSON.stringify([]),
+      p_allocations: [],
       p_rounding_residue: 0,
     });
     if (deficitRpcError) throw deficitRpcError;
@@ -137,7 +137,7 @@ export async function runAllocationEngine(
   const { error: rpcError } = await supabase.rpc("run_allocation_writes", {
     p_week_id: weekId,
     p_user_id: userId,
-    p_allocations: JSON.stringify(allocations),
+    p_allocations: allocations,
     p_rounding_residue: residue,
   });
   if (rpcError) throw rpcError;
