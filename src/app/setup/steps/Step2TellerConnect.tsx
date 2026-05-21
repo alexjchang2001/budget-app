@@ -40,7 +40,6 @@ async function handleEnrollmentSuccess(
   setStatus: (s: Status) => void,
   onNext: () => void,
 ): Promise<void> {
-  +  console.log("Teller onSuccess:", JSON.stringify(enrollment));
   try {
     await postTellerCredentials(enrollment.enrollment.id, enrollment.accessToken);
     setStatus("success");
@@ -50,22 +49,22 @@ async function handleEnrollmentSuccess(
   }
 }
 
+function handleConnect(setStatus: (s: Status) => void, onNext: () => void): void {
+  const sdk = (window as unknown as { TellerConnect?: TellerConnectSdk }).TellerConnect;
+  if (!sdk) { setStatus("error"); return; }
+  setStatus("loading");
+  sdk.setup({
+    applicationId: process.env.NEXT_PUBLIC_TELLER_APP_ID ?? "",
+    onSuccess: (enrollment) => {
+      console.log("Teller onSuccess: enrollment.id=", enrollment?.enrollment?.id);
+      handleEnrollmentSuccess(enrollment, setStatus, onNext);
+    },
+    onExit: () => setStatus("idle"),
+  }).open();
+}
+
 export default function Step2TellerConnect({ onNext }: { onNext: () => void }): JSX.Element {
   const [status, setStatus] = useState<Status>("idle");
-
-  function handleConnect(): void {
-    const sdk = (window as unknown as { TellerConnect?: TellerConnectSdk }).TellerConnect;
-    if (!sdk) { setStatus("error"); return; }
-    setStatus("loading");
-    sdk.setup({
-      applicationId: process.env.NEXT_PUBLIC_TELLER_APP_ID ?? "",
-      onSuccess: (enrollment) => {
-        console.log("Teller onSuccess:", enrollment);
-        handleEnrollmentSuccess(enrollment, setStatus, onNext);
-      },
-      onExit: () => setStatus("idle"),
-    }).open();
-  }
 
   return (
     <div className="w-full max-w-sm">
@@ -88,11 +87,17 @@ export default function Step2TellerConnect({ onNext }: { onNext: () => void }): 
         </p>
       )}
       <button
-        onClick={handleConnect}
+        onClick={() => handleConnect(setStatus, onNext)}
         disabled={status === "loading" || status === "success"}
         className="w-full rounded-xl bg-black py-4 text-base font-semibold text-white disabled:opacity-40"
       >
         {status === "error" ? "Try again" : "Connect your bank"}
+      </button>
+      <button
+        onClick={onNext}
+        className="mt-3 w-full py-3 text-sm text-gray-400 underline"
+      >
+        Skip for now
       </button>
     </div>
   );

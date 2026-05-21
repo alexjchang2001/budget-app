@@ -69,7 +69,7 @@ export async function bootstrapScheduleParse(
   perShiftMaxCents: number,
 ): Promise<void> {
   const supabase = createAdminClient();
-  await supabase.from("schedule_parse").insert({
+  const { error } = await supabase.from("schedule_parse").insert({
     user_id: userId,
     week_id: weekId,
     raw_screenshot_url: "",
@@ -82,6 +82,7 @@ export async function bootstrapScheduleParse(
     projected_low: 0,
     projected_high: 0,
   });
+  if (error) throw error;
 }
 
 export async function finalizeUser(

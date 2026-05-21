@@ -59,7 +59,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       finalizeUser(userId, incomeCents),
     ]);
     return jsonOk({ weekId });
-   } catch (err) {
+  } catch (err) {
     console.error("Setup failed:", err);
     return jsonError(500, "Setup failed");
   }

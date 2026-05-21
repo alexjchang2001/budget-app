@@ -103,12 +103,13 @@ export async function runAllocationEngine(
   const deficitResult = checkDeficitTrigger(income, distributable, foodMin);
   if (deficitResult.deficit) {
     // Still create bill_status rows even in deficit — pass empty allocations to RPC.
-    await supabase.rpc("run_allocation_writes", {
+    const { error: deficitRpcError } = await supabase.rpc("run_allocation_writes", {
       p_week_id: weekId,
       p_user_id: userId,
       p_allocations: JSON.stringify([]),
       p_rounding_residue: 0,
     });
+    if (deficitRpcError) throw deficitRpcError;
     return { deficit: true, condition: deficitResult.condition };
   }
 
@@ -133,12 +134,13 @@ export async function runAllocationEngine(
     });
   }
 
-  await supabase.rpc("run_allocation_writes", {
+  const { error: rpcError } = await supabase.rpc("run_allocation_writes", {
     p_week_id: weekId,
     p_user_id: userId,
     p_allocations: JSON.stringify(allocations),
     p_rounding_residue: residue,
   });
+  if (rpcError) throw rpcError;
 
   return { deficit: false, allocations, residue };
 }
