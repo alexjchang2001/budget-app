@@ -43,7 +43,7 @@ export async function insertBuckets(
     name: "Bills",
     type: "bills",
     allocation_pct: 0,
-    deficit_floor_pct: null,
+    deficit_floor_pct: 0,
     priority_order: 0,
   };
   const rows = [billsBucket, ...buckets.map((b) => ({ user_id: userId, ...b }))];
