@@ -65,7 +65,10 @@ export default function LoginPage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credential, recoveryEmail: recoveryEmail.trim() }),
       });
-      if (!res.ok) throw new Error("Registration failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.step ? `[${body.step}] ${body.error}` : (body.error ?? "Registration failed"));
+      }
       const { recoveryCode } = await res.json();
       sessionStorage.setItem("pendingRecoveryCode", recoveryCode);
       router.push("/setup");

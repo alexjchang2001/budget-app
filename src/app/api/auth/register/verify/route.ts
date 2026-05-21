@@ -13,23 +13,28 @@ import { setAuthCookie } from "@/lib/auth";
  * Returns recoveryCode once — must be shown to user immediately.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  let step = "parse";
   try {
     const body = await req.json();
     const rawCredential = body.credential ?? body;
     const recoveryEmail: string = body.recoveryEmail ?? "";
 
+    step = "cookie";
     const { challenge, userId } = await getChallengeCookieData() as {
       challenge: string;
       userId: string;
     };
 
+    step = "webauthn";
     const cred = await verifyPasskeyRegistration(rawCredential, challenge);
     if (!cred) {
       return NextResponse.json({ error: "Verification failed" }, { status: 400 });
     }
 
+    step = "recovery";
     const { code: recoveryCode, salt, hash: codeHash } = generateRecoveryBundle();
 
+    step = "db";
     const supabase = createAdminClient();
     const { error } = await supabase.from("user").insert({
       id: userId,
@@ -45,9 +50,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (error) {
       console.error("Failed to create user:", error);
-      return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
+      return NextResponse.json({ error: error.message, step: "db" }, { status: 500 });
     }
 
+    step = "jwt";
     const token = await signJwt(userId);
     const response = NextResponse.json({ userId, setupRequired: true, recoveryCode });
     setAuthCookie(response, token);
@@ -55,7 +61,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return response;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("Registration verify error:", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error(`Registration verify error at step=${step}:`, msg);
+    return NextResponse.json({ error: msg, step }, { status: 500 });
   }
 }
