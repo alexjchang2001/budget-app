@@ -54,7 +54,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     clearChallengeCookie(response);
     return response;
   } catch (err) {
-    console.error("Registration verify error:", err);
-    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Registration verify error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
