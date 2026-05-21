@@ -15,7 +15,7 @@ function customBucket(order: number): BucketDraft {
   return {
     name: "",
     allocation_pct: 0,
-    type: "custom",
+    type: "flex",
     deficit_floor_pct: null,
     priority_order: order,
   };
