@@ -7,6 +7,7 @@ import SummaryPills from "@/components/home/SummaryPills";
 import DeficitModal from "@/components/home/DeficitModal";
 import DepositBanners from "@/components/home/DepositBanners";
 import OfflineBanner from "@/components/home/OfflineBanner";
+import ConnectBankBanner from "@/components/home/ConnectBankBanner";
 import PageStatus from "@/components/ui/PageStatus";
 import type { HomeData } from "@/app/api/home/_helpers";
 
@@ -44,6 +45,7 @@ export default function HomePage(): JSX.Element {
   return (
     <main className="flex flex-col gap-4 pb-4">
       <OfflineBanner lastUpdated={fetchedAt.current} />
+      {!data.hasTellerConnected && <ConnectBankBanner onConnected={load} />}
       <DailyLimit dailyLimit={data.dailyLimit} openingDailyLimit={data.openingDailyLimit} />
       <PaydayCountdown weekStatus={data.weekStatus} incomeActual={data.incomeActual}
         incomeProjectedLow={data.incomeProjectedLow} incomeProjectedHigh={data.incomeProjectedHigh} />

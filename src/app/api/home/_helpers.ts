@@ -36,6 +36,7 @@ export type HomeData = {
   savingsPct: number;
   billsPaid: number;
   billsTotal: number;
+  hasTellerConnected: boolean;
 };
 
 async function getCurrentWeek(userId: string) {
@@ -99,15 +100,22 @@ async function getSyncError(userId: string): Promise<boolean> {
   return !!(data as unknown as { teller_sync_failed: boolean } | null)?.teller_sync_failed;
 }
 
+async function getTellerConnected(userId: string): Promise<boolean> {
+  const supabase = createAdminClient();
+  const { data } = await supabase.from("user").select("teller_enrollment_id").eq("id", userId).single();
+  return !!(data as unknown as { teller_enrollment_id: string | null } | null)?.teller_enrollment_id;
+}
+
 export async function getHomeData(userId: string): Promise<HomeData | null> {
   const week = await getCurrentWeek(userId);
   if (!week) return null;
 
-  const [billStatuses, recentTransactions, allocPcts, syncError, dailyLimit, openingDailyLimit] = await Promise.all([
+  const [billStatuses, recentTransactions, allocPcts, syncError, hasTellerConnected, dailyLimit, openingDailyLimit] = await Promise.all([
     getBillStatuses(week.id as string),
     getRecentTransactions(userId, week.id as string),
     getAllocPcts(week.id as string),
     getSyncError(userId),
+    getTellerConnected(userId),
     computeDailyLimit(week.id as string),
     computeOpeningDailyLimit(week.id as string),
   ]);
@@ -127,6 +135,7 @@ export async function getHomeData(userId: string): Promise<HomeData | null> {
     billStatuses,
     recentTransactions,
     syncError,
+    hasTellerConnected,
     debtPct: allocPcts.debtPct,
     savingsPct: allocPcts.savingsPct,
     billsPaid: paid,
