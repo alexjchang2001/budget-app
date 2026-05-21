@@ -18,7 +18,7 @@ type BeforeInstallPromptEvent = Event & {
 const DEFAULT_BUCKETS: BucketDraft[] = [
   { name: "Food", allocation_pct: 35, type: "food", deficit_floor_pct: 25, priority_order: 1 },
   { name: "Flex", allocation_pct: 35, type: "flex", deficit_floor_pct: null, priority_order: 2 },
-  { name: "Savings", allocation_pct: 20, type: "savings", deficit_floor_pct: null, priority_order: 3 },
+  { name: "Savings", allocation_pct: 20, type: "savings", deficit_floor_pct: 0, priority_order: 3 },
   { name: "Debt", allocation_pct: 10, type: "debt", deficit_floor_pct: 5, priority_order: 4 },
 ];
 
