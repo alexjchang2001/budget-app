@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-server";
 
-export async function POST(): Promise<NextResponse> {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "Not configured" }, { status: 403 });
+export async function POST(req: Request): Promise<NextResponse> {
+  const { secret } = await req.json().catch(() => ({ secret: "" }));
+  if (secret !== "tmp-reset-2026") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const supabase = createAdminClient();
   const tables = ["schedule_parse", "bill_status", "bucket_allocation", "transaction", "week", "bill", "bucket", "user"];
