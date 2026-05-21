@@ -1,6 +1,1 @@
-{
-  "crons": [
-    { "path": "/api/cron/teller-poll", "schedule": "*/30 * * * *" },
-    { "path": "/api/cron/teller-balance", "schedule": "0 */4 * * *" }
-  ]
-}
+{}
