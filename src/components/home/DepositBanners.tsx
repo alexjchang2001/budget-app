@@ -62,14 +62,6 @@ export default function DepositBanners({ weekStatus, syncError, recentTransactio
   const [showSheet, setShowSheet] = useState(false);
   const [confirmErr, setConfirmErr] = useState("");
 
-  if (syncError) {
-    return (
-      <div className="mx-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-        Bank sync issue — tap to reconnect
-      </div>
-    );
-  }
-
   if (falsePosDepositId) {
     return <FalsePosBanner txId={falsePosDepositId} onDone={onDepositConfirmed} />;
   }

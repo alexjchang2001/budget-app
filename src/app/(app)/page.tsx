@@ -45,7 +45,7 @@ export default function HomePage(): JSX.Element {
   return (
     <main className="flex flex-col gap-4 pb-4">
       <OfflineBanner lastUpdated={fetchedAt.current} />
-      {!data.hasTellerConnected && <ConnectBankBanner onConnected={load} />}
+      {(!data.hasTellerConnected || data.syncError) && <ConnectBankBanner onConnected={load} />}
       <DailyLimit dailyLimit={data.dailyLimit} openingDailyLimit={data.openingDailyLimit} />
       <PaydayCountdown weekStatus={data.weekStatus} incomeActual={data.incomeActual}
         incomeProjectedLow={data.incomeProjectedLow} incomeProjectedHigh={data.incomeProjectedHigh} />
